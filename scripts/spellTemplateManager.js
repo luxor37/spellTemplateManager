@@ -22,6 +22,7 @@ class spellTemplateManager {
 				spellTemplateManager.currentDurationRounds = 0;
 				break;
 			case "minute":
+			case "minutes":
 				spellTemplateManager.currentDurationRounds = value * 10;
 				break;
 			case "round":
@@ -67,7 +68,7 @@ class spellTemplateManager {
 				let update;
 				if(isConcentration){
 					update = {_id: template._id, flags: {"spellTemplateManager":{concentration: isConcentration, actor:spellTemplateManager.currentActor.data._id, duration: spellTemplateManager.currentDurationRounds}},borderColor:"#FFFF00"};
-				}else if(spellTemplateManager.currentRoundsDuration>0){
+				}else if(spellTemplateManager.currentDurationRounds>0){
 					update = {_id: template._id, flags: {"spellTemplateManager":{concentration: isConcentration, actor:spellTemplateManager.currentActor.data._id, duration: spellTemplateManager.currentDurationRounds}},borderColor:"#00FF00"};					
 				}else{
 					update = {_id: template._id, flags: {"spellTemplateManager":{concentration: isConcentration, actor:spellTemplateManager.currentActor.data._id, duration: spellTemplateManager.currentDurationRounds}}};
