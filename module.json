@@ -5,6 +5,15 @@
 	"author": "bitkiller0",
 	"version": "1.0",
 	"minimumCoreVersion": "0.6.5",
-	"scripts": ["scripts/spellTemplateManager.js"],
-	"system": "dnd5e"
+	"esmodules": [
+		"scripts/spellTemplateManager.js"
+	],
+	"system": "dnd5e",
+	"languages": [
+    		{
+			"lang": "en",
+			"name": "English",
+			"path": "lang/en.json"
+		}
+	]
 }
