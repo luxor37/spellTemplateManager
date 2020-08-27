@@ -1,0 +1,10 @@
+{
+    "spellTemplateManager.standardTemplateColor.name": "Standard Spell Template Border Color",
+    "spellTemplateManager.standardTemplateColor.hint": "Template border color for standard spells (no duration or concentration), as a hex string (rrggbb)",
+    "spellTemplateManager.concentrationTemplateColor.name": "Concentration Spell Template Border Color",
+    "spellTemplateManager.concentrationTemplateColor.hint": "Template border color for spells requiring concentration, as a hex string (rrggbb)",
+    "spellTemplateManager.enduringTemplateColor.name": "Enduring Spell Template Border Color",
+    "spellTemplateManager.enduringTemplateColor.hint": "Template border color for spells with a duration greater than instantaneous, that do not require concentration, as a hex string (rrggbb)",
+    "spellTemplateManager.specialTemplateColor.name": "Special Spell Template Border Color",
+    "spellTemplateManager.specialTemplateColor.hint": "Template border color for spells with a special duration (typically a trigger), that do not require concentration, as a hex string (rrggbb)"
+}
