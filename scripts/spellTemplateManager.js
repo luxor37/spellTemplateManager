@@ -68,13 +68,41 @@ class spellTemplateManager {
 				console.log("Spell Template Manager | Appending data");
 				let update;
 				if(isConcentration){
-					update = {_id: template._id, flags: {"spellTemplateManager":{concentration: isConcentration, actor:spellTemplateManager.currentActor.data._id, duration: spellTemplateManager.currentDurationRounds}},borderColor:("#"+game.settings.get('spellTemplateManager', 'concentrationTemplateColor')), isSpecial: (isSpecialSpell)};
+					update = {_id: template._id, flags: {
+						"spellTemplateManager":{
+							concentration: isConcentration, 
+							actor:spellTemplateManager.currentActor.data._id, 
+							duration: spellTemplateManager.currentDurationRounds,
+							special: (isSpecialSpell)
+						}
+					},borderColor:("#"+game.settings.get('spellTemplateManager', 'concentrationTemplateColor'))};
 				}else if(spellTemplateManager.currentDurationRounds>0){
-					update = {_id: template._id, flags: {"spellTemplateManager":{concentration: isConcentration, actor:spellTemplateManager.currentActor.data._id, duration: spellTemplateManager.currentDurationRounds}},borderColor:("#"+game.settings.get('spellTemplateManager', 'enduringTemplateColor')), isSpecial: (isSpecialSpell)};
+					update = {_id: template._id, flags: {
+						"spellTemplateManager":{
+							concentration: isConcentration, 
+							actor:spellTemplateManager.currentActor.data._id, 
+							duration: spellTemplateManager.currentDurationRounds,
+							special: (isSpecialSpell)
+						}
+					},borderColor:("#"+game.settings.get('spellTemplateManager', 'enduringTemplateColor'))};
 				}else if(spellTemplateManager.currentDurationRounds<0){
-					update = {_id: template._id, flags: {"spellTemplateManager":{concentration: isConcentration, actor:spellTemplateManager.currentActor.data._id, duration: spellTemplateManager.currentDurationRounds}},borderColor:("#"+game.settings.get('spellTemplateManager', 'specialTemplateColor')), isSpecial: (isSpecialSpell)};
+					update = {_id: template._id, flags: {
+						"spellTemplateManager":{
+							concentration: isConcentration, 
+							actor:spellTemplateManager.currentActor.data._id, 
+							duration: spellTemplateManager.currentDurationRounds,
+							special: (isSpecialSpell)
+						}
+					},borderColor:("#"+game.settings.get('spellTemplateManager', 'specialTemplateColor'))};
 				}else{
-					update = {_id: template._id, flags: {"spellTemplateManager":{concentration: isConcentration, actor:spellTemplateManager.currentActor.data._id, duration: spellTemplateManager.currentDurationRounds}},borderColor:("#"+game.settings.get('spellTemplateManager', 'standardTemplateColor')), isSpecial: (isSpecialSpell)};
+					update = {_id: template._id, flags: {
+						"spellTemplateManager":{
+							concentration: isConcentration, 
+							actor:spellTemplateManager.currentActor.data._id, 
+							duration: spellTemplateManager.currentDurationRounds,
+							special: (isSpecialSpell)
+						}
+					},borderColor:("#"+game.settings.get('spellTemplateManager', 'standardTemplateColor'))};
 				}
 				let updated = scene.updateEmbeddedEntity("MeasuredTemplate", update);
 				spellTemplateManager.resetItemData();
@@ -299,7 +327,14 @@ class spellTemplateManager {
 						default:
 							valueInRounds = -1;
 					}
-					let update = {_id: managing[i]._id, flags: {"spellTemplateManager":{concentration: false, actor:id, duration: valueInRounds}},borderColor:("#"+game.settings.get('spellTemplateManager', (spellIsSpecial?'specialTemplateColor':'enduringTemplateColor'))), isSpecial: spellIsSpecial};
+					let update = {_id: managing[i]._id, flags: {
+						"spellTemplateManager":{
+							concentration: false, 
+							actor:id, 
+							duration: valueInRounds,
+							special: spellIsSpecial
+						}
+					},borderColor:("#"+game.settings.get('spellTemplateManager', (spellIsSpecial?'specialTemplateColor':'enduringTemplateColor')))};
 					let updated = scene.updateEmbeddedEntity("MeasuredTemplate", update);
 					break;
 			}
@@ -336,7 +371,7 @@ class spellTemplateManager {
 				update = {_id: j._id, borderColor:("#"+game.settings.get('spellTemplateManager', 'concentrationTemplateColor'))};
 			}else if(j.flags.spellTemplateManager.duration > 0){
 				update = {_id: j._id, borderColor:("#"+game.settings.get('spellTemplateManager', 'enduringTemplateColor'))};
-			}else if(j.flags.spellTemplateManager.isSpecial){
+			}else if(j.flags.spellTemplateManager.special){
 				update = {_id: j._id, borderColor:("#"+game.settings.get('spellTemplateManager', 'specialTemplateColor'))};
 			}else {
 				update = {_id: j._id, borderColor:("#"+game.settings.get('spellTemplateManager', 'standardTemplateColor'))};
