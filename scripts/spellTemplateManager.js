@@ -197,7 +197,7 @@ class spellTemplateManager {
 	static async promptForUnits(){
 		return new Promise(complete =>{
         		new Dialog({
-				title: "How many?",
+				title: "For how long?",
 				content: "<p>Choose the type of units for this template.</strong></p>",
 				buttons: {
 					rounds: {
