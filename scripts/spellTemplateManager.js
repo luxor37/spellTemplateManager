@@ -43,7 +43,6 @@ class spellTemplateManager {
 
 	static getData (dialog, html){
 		console.log("Spell Template Manager | Collecting Item Data");
-		console.log(dialog,html);
 		spellTemplateManager.currentItem = undefined;
 		spellTemplateManager.currentActor = undefined;
 		spellTemplateManager.currentPlayer = undefined;
@@ -81,7 +80,6 @@ class spellTemplateManager {
 				spellTemplateManager.resetItemData();
 				done = true;
 			}else{
-				console.log("try again");
 				setTimeout(spellTemplateManager.updateTemplate(scene,template,isConcentration,isSpecialSpell,index+1), 1000);
 			}
 		}else{
@@ -100,7 +98,7 @@ class spellTemplateManager {
 			let isSpecial = (spellTemplateManager.currentItem.data.data.duration.units === "unti");
 			let templates;
 			if(isConcentration){
-				console.log("Spell Template Manager | New concentration spell.  Clearing previous actor's concentration templates.");
+				console.log("Spell Template Manager | New concentration spell.  Clearing actor's previous concentration templates.");
 				templates = scene.data.templates.filter(
 					function (i){
 						if(i.flags.spellTemplateManager !== undefined){
@@ -132,7 +130,6 @@ class spellTemplateManager {
 				);
 			}
 		);
-		console.log("Returned templates: ", templates);
 		let deletions = templates.map(i => i._id);
 		let updated = scene.deleteEmbeddedEntity("MeasuredTemplate",deletions);
 	}
@@ -261,15 +258,10 @@ class spellTemplateManager {
 		let controlling = game.scenes.active.data.templates.filter(i => i.flags.spellTemplateManager !== undefined && i.user === game.userId);
 		let aging = controlling.filter(i => i.flags.spellTemplateManager.actor === turnActor);
 		for(let i = 0; i < aging.length; i++){
-			console.log("ID: ", aging[i]._id, "Initial duration: ", aging[i].flags.spellTemplateManager.duration);
 			let update = {_id: aging[i]._id, flags: {"spellTemplateManager":{duration: aging[i].flags.spellTemplateManager.duration-1}}};
 			let updated = await game.scenes.active.updateEmbeddedEntity("MeasuredTemplate",update);
-			let newTemplate = game.scenes.active.getEmbeddedEntity("MeasuredTemplate", aging[i]._id);
-			console.log(game.scenes.active.data.templates[0].flags.spellTemplateManager.duration);
-			console.log("New duration: ", newTemplate.flags.spellTemplateManager.duration);	
+			let newTemplate = game.scenes.active.getEmbeddedEntity("MeasuredTemplate", aging[i]._id);	
 		}
-
-		console.log("Templates after aging: ",game.scenes.active.data.templates);
 	}
 
 	static async manageUnmanaged(name,id){
@@ -318,14 +310,12 @@ class spellTemplateManager {
 		if(spellTemplateManager.haveActiveTemplates()){
 			let turnActor = game.combats.active.combatant.actor._id
 			let name = game.combats.active.combatant.actor.name
-			console.log("Spell Template Manager | Leaving turn: ", name);
 			await spellTemplateManager.cleanupTemplates(turnActor);
 			await spellTemplateManager.manageUnmanaged(name,turnActor);
 		}
 	}
 	static async updateCombat(){
 		if(spellTemplateManager.haveActiveTemplates()){
-			console.log("Spell Template Manager | Current Turn: ", game.combats.active.combatant.actor.name);
 			let turnActor = game.combats.active.combatant.actor._id
 			let isMyActor = (canvas.tokens.controlled.filter(i => i.actor.data._id) !== undefined);
 			if(isMyActor){
