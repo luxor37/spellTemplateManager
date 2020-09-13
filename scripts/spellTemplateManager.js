@@ -440,7 +440,7 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 	document.getElementsByClassName("dialog-button")[0].addEventListener("click",
 		async () => {
 			let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
-			let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect].innerText;
+			let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
 			let slotsAvailable = (spellLevelText.indexOf("0") === -1);
 			if(slotsAvailable){
 				await spellTemplateManager.getData(dialog,html);
