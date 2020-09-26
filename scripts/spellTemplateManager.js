@@ -361,7 +361,12 @@ class spellTemplateManager {
 	}
 
 	static haveActiveTemplates(){
-		return game.scenes.active.data.templates.filter(i=> i.user === game.userId).length > 0;
+		if(game.scenes.active === undefined ){
+			console.log("Spell Template Manager | No active scene found!  Nothing to do.");
+			return false;
+		}else{
+			return game.scenes.active.data.templates.filter(i=> i.user === game.userId).length > 0;
+		}
 	}
 
 	static resetTemplateBorders(){
