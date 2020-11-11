@@ -444,10 +444,15 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 	console.log("Spell Template Manager | Ability Use Dialog Capture");
 	document.getElementsByClassName("dialog-button")[0].addEventListener("click",
 		async () => {
-			let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
-			let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
-			let slotsAvailable = (spellLevelText.indexOf("0") === -1);
-			if(slotsAvailable){
+			console.log("FormData: ", document.querySelectorAll("form#ability-use-form")[0].children[2]?.children[0]?.innerText);
+			if("Cast at Level" == document.querySelectorAll("form#ability-use-form")[0].children[2]?.children[0]?.innerText){
+				let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
+				let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
+				let slotsAvailable = (spellLevelText.indexOf("0") === -1);
+				if(slotsAvailable){
+					await spellTemplateManager.getData(dialog,html);
+				}
+			}else if("Place Measured Template" == document.querySelectorAll("form#ability-use-form")[0].children[2]?.children[0]?.innerText?.trim()){
 				await spellTemplateManager.getData(dialog,html);
 			}
 		}
