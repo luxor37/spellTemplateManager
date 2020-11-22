@@ -1,0 +1,10 @@
+{
+    "spellTemplateManager.standardTemplateColor.name": "Color de borde de plantilla de conjuro estándar",
+    "spellTemplateManager.standardTemplateColor.hint": "Control de color de borde de plantilla para conjuros estándar (sin duración ni concentración), en forma de string hexadecimal (rrggbb)",
+    "spellTemplateManager.concentrationTemplateColor.name": "Color de borde de plantilla de conjuro con concentración",
+    "spellTemplateManager.concentrationTemplateColor.hint": "Control de color de borde de plantilla para conjuros con concentración, en forma de string hexadecimal (rrggbb)",
+    "spellTemplateManager.enduringTemplateColor.name": "Color de borde de plantilla de conjuro duradera",
+    "spellTemplateManager.enduringTemplateColor.hint": "Control de color de borde de plantilla para conjuros con duración mayor a instantáneo, que no necesitan concentración, en forma de string hexadecimal (rrggbb)",
+    "spellTemplateManager.specialTemplateColor.name": "Color de borde de plantilla de conjuro especial",
+    "spellTemplateManager.specialTemplateColor.hint": "Control de color de borde de plantilla para conjuros con duración especial (normalmente con desencadenante), que no necesitan concentración, en forma de string hexadecimal (rrggbb)"
+}
