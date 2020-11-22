@@ -3,9 +3,9 @@
 	"title": "Spell Template Manager - for DnD5e",
 	"description": "A simple module for automatically removing spell templates when spell duration is completed. Also maintains a single concentration spell per character.",
 	"author": "bitkiller0",
-	"version": "0.1.10",
+	"version": "0.1.11",
 	"minimumCoreVersion": "0.6.5",
-	"compatibleCoreVersion": "0.7.6",
+	"compatibleCoreVersion": "0.7.7",
 	"dependencies": [
 		{
 			"name": "dnd5e",
@@ -21,10 +21,15 @@
 			"lang": "en",
 			"name": "English",
 			"path": "lang/en.json"
+		}    		
+		{
+			"lang": "es",
+			"name": "Español",
+			"path": "lang/es.json"
 		}
 	],
 	"url": "https://github.com/bitkiller0/spellTemplateManager",
 	"manifest": "https://github.com/bitkiller0/spellTemplateManager/raw/master/module.json",
-	"download": "https://github.com/bitkiller0/spellTemplateManager/archive/0.1.10.zip",
+	"download": "https://github.com/bitkiller0/spellTemplateManager/archive/0.1.11.zip",
 	"readme": "https://raw.githubusercontent.com/bitkiller0/spellTemplateManager/master/README.md"
 }
