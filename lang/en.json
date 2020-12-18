@@ -6,5 +6,13 @@
     "spellTemplateManager.enduringTemplateColor.name": "Enduring Spell Template Border Color",
     "spellTemplateManager.enduringTemplateColor.hint": "Template border color for spells with a duration greater than instantaneous, that do not require concentration, as a hex string (rrggbb)",
     "spellTemplateManager.specialTemplateColor.name": "Special Spell Template Border Color",
-    "spellTemplateManager.specialTemplateColor.hint": "Template border color for spells with a special duration (typically a trigger), that do not require concentration, as a hex string (rrggbb)"
+    "spellTemplateManager.specialTemplateColor.hint": "Template border color for spells with a special duration (typically a trigger), that do not require concentration, as a hex string (rrggbb)",
+    "spellTemplateManager.unmanagedTemplateAction.name": "Unmanaged Template Action",
+    "spellTemplateManager.unmanagedTemplateAction.hint": "What should Spell Template Manager do for unmanaged spell templates?",
+    "spellTemplateManager.unmanagedTemplateAction.prompt": "Prompt me every time",
+    "spellTemplateManager.unmanagedTemplateAction.skip": "Skip - leave in place",
+    "spellTemplateManager.unmanagedTemplateAction.delete": "Delete",
+    "spellTemplateManager.unmanagedTemplateAction.claim": "Claim them",
+    "spellTemplateManager.instantaneousSpellFade.name": "Instantaneous Spell Fade Duration",
+    "spellTemplateManager.instantaneousSpellFade.hint": "Number of additional rounds to display instantaneous spell templates"
 }

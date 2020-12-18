@@ -6,5 +6,13 @@
     "spellTemplateManager.enduringTemplateColor.name": "Color de borde de plantilla de conjuro duradera",
     "spellTemplateManager.enduringTemplateColor.hint": "Control de color de borde de plantilla para conjuros con duración mayor a instantáneo, que no necesitan concentración, en forma de string hexadecimal (rrggbb)",
     "spellTemplateManager.specialTemplateColor.name": "Color de borde de plantilla de conjuro especial",
-    "spellTemplateManager.specialTemplateColor.hint": "Control de color de borde de plantilla para conjuros con duración especial (normalmente con desencadenante), que no necesitan concentración, en forma de string hexadecimal (rrggbb)"
+    "spellTemplateManager.specialTemplateColor.hint": "Control de color de borde de plantilla para conjuros con duración especial (normalmente con desencadenante), que no necesitan concentración, en forma de string hexadecimal (rrggbb)",
+    "spellTemplateManager.unmanagedTemplateAction.name": "Acción de plantilla no administrada",
+    "spellTemplateManager.unmanagedTemplateAction.hint": "¿Qué debería hacer el Administrador de Plantillas de Conjuro con las plantillas de conjuro no administradas?",
+    "spellTemplateManager.unmanagedTemplateAction.prompt": "Avisarme cada vez",
+    "spellTemplateManager.unmanagedTemplateAction.skip": "Saltar - dejar en su lugar",
+    "spellTemplateManager.unmanagedTemplateAction.delete": "Eliminar",
+    "spellTemplateManager.unmanagedTemplateAction.claim": "Reclamarlas",
+    "spellTemplateManager.instantaneousSpellFade.name": "Duración del desvanecimiento del conjuro instantánea",
+    "spellTemplateManager.instantaneousSpellFade.hint": "Número de rondas adicionales para mostrar plantillas de conjuros instantáneos"
 }
