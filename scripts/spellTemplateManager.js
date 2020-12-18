@@ -22,7 +22,7 @@ class spellTemplateManager {
 				spellTemplateManager.currentDurationRounds = value * 10 * 60;
 				break;
 			case "inst":
-				spellTemplateManager.currentDurationRounds = 0;
+				spellTemplateManager.currentDurationRounds = 0 + game.settings.get("spellTemplateManager", "instantaneousSpellFade");
 				break;
 			case "minute":
 			case "minutes":
@@ -222,7 +222,7 @@ class spellTemplateManager {
 	static async promptForUnits(){
 		return new Promise(complete =>{
         		new Dialog({
-				title: "For how long?",
+				title: "Claim for how long?",
 				content: "<p>Choose the type of units for this template.</strong></p>",
 				buttons: {
 					rounds: {
@@ -292,19 +292,24 @@ class spellTemplateManager {
 		}
 	}
 
-	static async manageUnmanaged(name,id){
+	static async manageUnmanaged(name,id,GM=false){
 		let scene=game.scenes.active;
-		let managing = scene.data.templates.filter(i => i.flags.spellTemplateManager === undefined && i.user === game.userId);
+		let managing = scene.data.templates.filter(i => i.flags.spellTemplateManager === undefined && (GM || i.user === game.userId));
 		for(let i = 0; i < managing.length; i++){
-			await canvas.animatePan({x : managing[i].x, y : managing[i].y, duration : 250});
-			let response = await spellTemplateManager.promptForAction(name);
-			switch(response.action){
-				case "delete":
-					let deleted = scene.deleteEmbeddedEntity("MeasuredTemplate",managing[i]._id);
-					break;
-				case "skip":
-					break;
-				case "claim":
+			let action = game.settings.get("spellTemplateManager","unmanagedTemplateAction");			
+			let response = null;
+			if(action === "prompt"){
+				await canvas.animatePan({x : managing[i].x, y : managing[i].y, duration : 250});
+				response = await spellTemplateManager.promptForAction(name);
+			}
+			if(action === "delete" || (action==="prompt" && response?.action === "delete")){
+				let deleted = scene.deleteEmbeddedEntity("MeasuredTemplate",managing[i]._id);
+			}
+			if(action === "claim"){
+				await canvas.animatePan({x : managing[i].x, y : managing[i].y, duration : 250});
+				response = await spellTemplateManager.promptForUnits();
+			}
+			if(action === "claim" || (action === "prompt" && response?.action === "claim")){
 					let valueInRounds = 0;
 					let spellIsSpecial = false;
 					switch(response.units) {
@@ -335,20 +340,11 @@ class spellTemplateManager {
 							special: spellIsSpecial
 						}
 					},borderColor:("#"+game.settings.get('spellTemplateManager', (spellIsSpecial?'specialTemplateColor':'enduringTemplateColor')))};
-					let updated = scene.updateEmbeddedEntity("MeasuredTemplate", update);
-					break;
+					let updated = scene.updateEmbeddedEntity("MeasuredTemplate", update);	
 			}
 		}
 	}
 
-	static async preUpdateCombat(){
-		if(spellTemplateManager.haveActiveTemplates()){
-			let turnActor = game.combats.active.combatant.actor._id
-			let name = game.combats.active.combatant.actor.name
-			await spellTemplateManager.cleanupTemplates(turnActor);
-			await spellTemplateManager.manageUnmanaged(name,turnActor);
-		}
-	}
 	static async updateCombat(){
 		if(spellTemplateManager.haveActiveTemplates()){
 			let turnActor = game.combats.active.combatant.actor._id
@@ -360,12 +356,23 @@ class spellTemplateManager {
 		}
 	}
 
-	static haveActiveTemplates(){
+	static async preUpdateCombat(userID=''){
+		if(userID?spellTemplateManager.haveActiveTemplates(userID):spellTemplateManager.haveActiveTemplates()){
+			let turnActor = game.combats.active.combatant.actor._id
+			let name = game.combats.active.combatant.actor.name
+			await spellTemplateManager.cleanupTemplates(turnActor);
+			await spellTemplateManager.manageUnmanaged(name,turnActor,(userID?true:false));
+		}
+	}
+
+	static haveActiveTemplates(userID=''){
 		if(game.scenes.active === undefined ){
 			console.log("Spell Template Manager | No active scene found!  Nothing to do.");
 			return false;
 		}else{
-			return game.scenes.active.data.templates.filter(i=> i.user === game.userId).length > 0;
+			return userID	
+			?game.scenes.active.data.templates.filter(i=> i.flags.spellTemplateManager == null).length > 0
+			:game.scenes.active.data.templates.filter(i=> i.user === game.userId).length > 0;
 		}
 	}
 
@@ -433,6 +440,39 @@ function registerSpellTemplateManagerSettings(){
 			onChange: () => { spellTemplateManager.resetTemplateBorders();}
 		}
 	);
+	game.settings.register(
+		"spellTemplateManager", "unmanagedTemplateAction", {
+  			name: game.i18n.localize("spellTemplateManager.unmanagedTemplateAction.name"),
+			hint: game.i18n.localize("spellTemplateManager.unmanagedTemplateAction.hint"),
+			scope: "client",
+			config: true,
+			type: String,
+			choices: {
+				"prompt": game.i18n.localize("spellTemplateManager.unmanagedTemplateAction.prompt"),
+				"skip": game.i18n.localize("spellTemplateManager.unmanagedTemplateAction.skip"),
+				"delete": game.i18n.localize("spellTemplateManager.unmanagedTemplateAction.delete"),
+				"claim": game.i18n.localize("spellTemplateManager.unmanagedTemplateAction.claim")
+			},
+			default: "prompt",
+			onChange: value => console.log(value)
+		}
+	);
+	game.settings.register(
+		"spellTemplateManager", "instantaneousSpellFade", {
+			name: game.i18n.localize("spellTemplateManager.instantaneousSpellFade.name"),
+			hint: game.i18n.localize("spellTemplateManager.instantaneousSpellFade.hint"),
+			scope: "world",
+			config: true,
+			type: Number,
+			range: {
+				min: 0,
+				max: 10,
+				step: 1
+			},
+			default: 0,
+			onChange: value => console.log(value)
+		}
+	);
 }
 
 
@@ -461,7 +501,15 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 
 Hooks.on("createMeasuredTemplate",spellTemplateManager.evaluateTemplate);
 
-Hooks.on("preUpdateCombat",spellTemplateManager.preUpdateCombat);
+Hooks.on("preUpdateCombat",(Combat,Round,Diff,User) => {
+	if((User == game.user._id) && game.user.isGM){
+		spellTemplateManager.preUpdateCombat(User);
+	}else if(User == game.user._id){
+		spellTemplateManager.preUpdateCombat();
+	}
+});
+
+//spellTemplateManager.preUpdateCombat);
 
 Hooks.on("updateCombat",spellTemplateManager.updateCombat);
 
