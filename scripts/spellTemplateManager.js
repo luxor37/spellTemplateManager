@@ -146,9 +146,11 @@ class spellTemplateManager {
 	}
 
 	static async cleanupTemplates(turnActor){
-		console.log("Spell Template Manager | Cleaning Templates");
+		console.log("Spell Template Manager | Cleaning Templates: ", turnActor);
 		let scene=game.scenes.active;
-		let prefilter = scene.data.templates.filter(i => i.flags.spellTemplateManager !== undefined && i.user === game.userId);
+		let prefilter = scene.data.templates.filter(i => i.flags.spellTemplateManager !== undefined //&& i.user === game.userId);
+		);
+		
 		let templates = prefilter.filter(
 			function(i){
 				return (
@@ -370,9 +372,10 @@ class spellTemplateManager {
 			console.log("Spell Template Manager | No active scene found!  Nothing to do.");
 			return false;
 		}else{
-			return userID	
-			?game.scenes.active.data.templates.filter(i=> i.flags.spellTemplateManager == null).length > 0
+			let HT = userID	
+			?game.scenes.active.data.templates.filter(i=> i.flags.spellTemplateManager !== null).length > 0
 			:game.scenes.active.data.templates.filter(i=> i.user === game.userId).length > 0;
+			return HT;
 		}
 	}
 
