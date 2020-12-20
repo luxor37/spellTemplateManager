@@ -121,8 +121,9 @@ class spellTemplateManager {
 	static async evaluateTemplate(data,template){
 		console.log("Spell Template Manager | Evaluating template");
 		if(spellTemplateManager.currentItem !== undefined){
+			console.log(spellTemplateManager.currentItem);
 			let scene=game.scenes.active;
-			let isConcentration = spellTemplateManager.currentItem.data.data.components.concentration;
+			let isConcentration = spellTemplateManager.currentItem.data.data.components?spellTemplateManager.currentItem.data.data.components?.concentration:false;
 			let isSpecial = (spellTemplateManager.currentItem.data.data.duration.units === "unti");
 			let templates;
 			if(isConcentration){
@@ -487,16 +488,45 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 	console.log("Spell Template Manager | Ability Use Dialog Capture");
 	document.getElementsByClassName("dialog-button")[0].addEventListener("click",
 		async () => {
-			console.log("FormData: ", document.querySelectorAll("form#ability-use-form")[0].children[2]?.children[0]?.innerText);
-			if("Cast at Level" == document.querySelectorAll("form#ability-use-form")[0].children[2]?.children[0]?.innerText){
-				let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
-				let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
-				let slotsAvailable = (spellLevelText.indexOf("0") === -1);
-				if(slotsAvailable){
-					await spellTemplateManager.getData(dialog,html);
-				}
-			}else if("Place Measured Template" == document.querySelectorAll("form#ability-use-form")[0].children[2]?.children[0]?.innerText?.trim()){
+			
+			
+			let isSpell = false;
+			let isFeature = false;
+			let isAvailable = false;
+			let isAtWill = false
+	
+			console.log("Spell Template Manager | Evaluating Dialog");
+
+			for(let i = 0; i < document.querySelectorAll("form#ability-use-form")[0].children.length; i++){
+				if("Consume Available Usage?" == document.querySelectorAll("form#ability-use-form")[0].children[i].innerText){
+					isFeature=true;
+					if(document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("This feat has") > -1){
+						console.log("Spell Template Manager | Feature Detected");
+						isAvailable = (document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf(" 0 of") === -1 ||
+						   document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked == false);	
+					}
+				}			
+				if("Cast at Level" == document.querySelectorAll("form#ability-use-form")[0].children[i]?.children[0]?.innerText){
+					isSpell=true;
+					console.log("Spell Template Manager | Spell Cast Detected");
+					let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
+					let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
+					isAvailable = (spellLevelText.indexOf("0") === -1);
+				}	
+			}
+			if(!isSpell && !isFeature){
+				isAtWill = true;
+				console.log("At-will Ability Detected");
+			}else{
+				console.log("Form: ",document.querySelectorAll("form#ability-use-form")[0].children);
+			}
+
+			if( ((isSpell || isFeature) && isAvailable) ||
+			    (isAtWill)
+			){
 				await spellTemplateManager.getData(dialog,html);
+			}else{
+				console.log("Spell Template Manager | Unknown Form: ",document.querySelectorAll("form#ability-use-form")[0].children);
 			}
 		}
 	);
@@ -515,4 +545,3 @@ Hooks.on("preUpdateCombat",(Combat,Round,Diff,User) => {
 //spellTemplateManager.preUpdateCombat);
 
 Hooks.on("updateCombat",spellTemplateManager.updateCombat);
-
