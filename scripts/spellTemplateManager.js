@@ -55,7 +55,7 @@ class spellTemplateManager {
 
 	static async deleteAllTemplates(){
 		console.log("Spell Template Manager | Cleaning All Templates");
-		let scene=game.scenes.active;
+		let scene=game.scenes.viewed;
 		let templates = scene.data.templates.filter(i => i.user === game.userId);
 		let deletions = templates.map(i => i._id);
 		let updated = await scene.deleteEmbeddedEntity("MeasuredTemplate",deletions);
@@ -121,8 +121,7 @@ class spellTemplateManager {
 	static async evaluateTemplate(data,template){
 		console.log("Spell Template Manager | Evaluating template");
 		if(spellTemplateManager.currentItem !== undefined){
-			console.log(spellTemplateManager.currentItem);
-			let scene=game.scenes.active;
+			let scene=game.scenes.viewed;
 			let isConcentration = spellTemplateManager.currentItem.data.data.components?spellTemplateManager.currentItem.data.data.components?.concentration:false;
 			let isSpecial = (spellTemplateManager.currentItem.data.data.duration.units === "unti");
 			let templates;
@@ -146,16 +145,15 @@ class spellTemplateManager {
 		}
 	}
 
-	static async cleanupTemplates(turnActor){
-		console.log("Spell Template Manager | Cleaning Templates: ", turnActor);
-		let scene=game.scenes.active;
-		let prefilter = scene.data.templates.filter(i => i.flags.spellTemplateManager !== undefined //&& i.user === game.userId);
-		);
+	static async cleanupTemplates(Combat){
+		console.log("Spell Template Manager | Cleaning Templates: ", Combat.combatant.actor.id);
+		let scene=Combat.scene;
+		let prefilter = scene.data.templates.filter(i => i.flags.spellTemplateManager !== undefined);
 		
 		let templates = prefilter.filter(
 			function(i){
 				return (
-					(i.flags.spellTemplateManager.actor === turnActor || i.flags.spellTemplateManager.actor === undefined) && 
+					(i.flags.spellTemplateManager.actor === Combat.combatant.actor.id || i.flags.spellTemplateManager.actor === undefined) && 
 					(i.flags.spellTemplateManager.duration <= 0 || i.flags.spellTemplateManager.duration === undefined) &&
 					(!i.flags.spellTemplateManager.special || i.flags.spellTemplateManager.special === undefined)
 				);
@@ -284,26 +282,30 @@ class spellTemplateManager {
 	}
 
 
-	static async ageTemplates(turnActor){
-		console.log("Spell Template Manger | Aging templates for ", game.combats.active.combatants[game.combats.active.combatants.findIndex(x => x.tokenId === game.combats.active.current.tokenId)].name);
-		let controlling = game.scenes.active.data.templates.filter(i => i.flags.spellTemplateManager !== undefined && i.user === game.userId);
-		let aging = controlling.filter(i => i.flags.spellTemplateManager.actor === turnActor);
+	static async ageTemplates(Combat){
+		console.log("Spell Template Manger | Aging templates for ", Combat.combatant.actor.name);
+		let controlling = Combat.scene.data.templates.filter(i => i.flags.spellTemplateManager !== undefined);
+		let aging = controlling.filter(i => i.flags.spellTemplateManager.actor === Combat.combatant.actor.id);
 		for(let i = 0; i < aging.length; i++){
 			let update = {_id: aging[i]._id, flags: {"spellTemplateManager":{duration: aging[i].flags.spellTemplateManager.duration-1}}};
-			let updated = await game.scenes.active.updateEmbeddedEntity("MeasuredTemplate",update);
-			let newTemplate = game.scenes.active.getEmbeddedEntity("MeasuredTemplate", aging[i]._id);	
+			let updated = await Combat.scene.updateEmbeddedEntity("MeasuredTemplate",update);
+			let newTemplate = Combat.scene.getEmbeddedEntity("MeasuredTemplate", aging[i]._id);	
 		}
 	}
 
-	static async manageUnmanaged(name,id,GM=false){
-		let scene=game.scenes.active;
+	static async manageUnmanaged(Combat,GM=false){
+		console.log("Spell Template Manager | Looking for Unmanaged Templates");
+		let scene=Combat.scene;
+		let turnActor = Combat.combatant.actor;
+		let name = turnActor.name;
+		
 		let managing = scene.data.templates.filter(i => i.flags.spellTemplateManager === undefined && (GM || i.user === game.userId));
 		for(let i = 0; i < managing.length; i++){
 			let action = game.settings.get("spellTemplateManager","unmanagedTemplateAction");			
 			let response = null;
 			if(action === "prompt"){
 				await canvas.animatePan({x : managing[i].x, y : managing[i].y, duration : 250});
-				response = await spellTemplateManager.promptForAction(name);
+				response = await spellTemplateManager.promptForAction(turnActor.name);
 			}
 			if(action === "delete" || (action==="prompt" && response?.action === "delete")){
 				let deleted = scene.deleteEmbeddedEntity("MeasuredTemplate",managing[i]._id);
@@ -338,7 +340,7 @@ class spellTemplateManager {
 					let update = {_id: managing[i]._id, flags: {
 						"spellTemplateManager":{
 							concentration: false, 
-							actor:id, 
+							actor: turnActor.id, 
 							duration: valueInRounds,
 							special: spellIsSpecial
 						}
@@ -348,36 +350,16 @@ class spellTemplateManager {
 		}
 	}
 
-	static async updateCombat(){
-		if(spellTemplateManager.haveActiveTemplates()){
-			let turnActor = game.combats.active.combatant.actor._id
-			let isMyActor = (canvas.tokens.controlled.filter(i => i.actor.data._id) !== undefined);
-			if(isMyActor){
-				await spellTemplateManager.ageTemplates(turnActor);
-			}
-			await spellTemplateManager.cleanupTemplates(turnActor);
-		}
+	static async updateCombat(Combat){
+		await spellTemplateManager.ageTemplates(Combat);
+		await spellTemplateManager.cleanupTemplates(Combat);
+		
 	}
 
-	static async preUpdateCombat(userID=''){
-		if(userID?spellTemplateManager.haveActiveTemplates(userID):spellTemplateManager.haveActiveTemplates()){
-			let turnActor = game.combats.active.combatant.actor._id
-			let name = game.combats.active.combatant.actor.name
-			await spellTemplateManager.cleanupTemplates(turnActor);
-			await spellTemplateManager.manageUnmanaged(name,turnActor,(userID?true:false));
-		}
-	}
+	static async preUpdateCombat(Combat, userID=''){
+		await spellTemplateManager.cleanupTemplates(Combat);
+		await spellTemplateManager.manageUnmanaged(Combat,(userID?true:false));
 
-	static haveActiveTemplates(userID=''){
-		if(game.scenes.active === undefined ){
-			console.log("Spell Template Manager | No active scene found!  Nothing to do.");
-			return false;
-		}else{
-			let HT = userID	
-			?game.scenes.active.data.templates.filter(i=> i.flags.spellTemplateManager !== null).length > 0
-			:game.scenes.active.data.templates.filter(i=> i.user === game.userId).length > 0;
-			return HT;
-		}
 	}
 
 	static resetTemplateBorders(){
@@ -496,7 +478,7 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 			let isAtWill = false
 	
 			console.log("Spell Template Manager | Evaluating Dialog");
-
+			
 			for(let i = 0; i < document.querySelectorAll("form#ability-use-form")[0].children.length; i++){
 				if("Consume Available Usage?" == document.querySelectorAll("form#ability-use-form")[0].children[i].innerText){
 					isFeature=true;
@@ -506,21 +488,19 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 						   document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked == false);	
 					}
 				}			
-				if("Cast at Level" == document.querySelectorAll("form#ability-use-form")[0].children[i]?.children[0]?.innerText){
+				if("Consume Spell Slot?" == document.querySelectorAll("form#ability-use-form")[0].children[i]?.children[0]?.innerText){
 					isSpell=true;
 					console.log("Spell Template Manager | Spell Cast Detected");
 					let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
 					let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
-					isAvailable = (spellLevelText.indexOf("0") === -1);
+					let isConsuming = document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked;
+					isAvailable = (spellLevelText.indexOf("0") === -1 || !isConsuming);
 				}	
 			}
 			if(!isSpell && !isFeature){
 				isAtWill = true;
 				console.log("At-will Ability Detected");
-			}else{
-				console.log("Form: ",document.querySelectorAll("form#ability-use-form")[0].children);
 			}
-
 			if( ((isSpell || isFeature) && isAvailable) ||
 			    (isAtWill)
 			){
@@ -536,12 +516,17 @@ Hooks.on("createMeasuredTemplate",spellTemplateManager.evaluateTemplate);
 
 Hooks.on("preUpdateCombat",(Combat,Round,Diff,User) => {
 	if((User == game.user._id) && game.user.isGM){
-		spellTemplateManager.preUpdateCombat(User);
-	}else if(User == game.user._id){
-		spellTemplateManager.preUpdateCombat();
+		console.log("Spell Template Manager | Initiating PUC as GM!");
+		spellTemplateManager.preUpdateCombat(Combat,User);
+	}else if(User == game.user._id  && !game.user.isGM){
+		console.log("Spell Template Manager | Initiating PUC as PC!");
+		spellTemplateManager.preUpdateCombat(Combat);
 	}
 });
 
-//spellTemplateManager.preUpdateCombat);
-
-Hooks.on("updateCombat",spellTemplateManager.updateCombat);
+Hooks.on("updateCombat", (Combat,Round,Diff,User) => {
+	if(game.user.isGM){
+		console.log("Spell Template Manager | Initiating UC as GM!");
+		spellTemplateManager.updateCombat(Combat);
+	}
+});
