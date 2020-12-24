@@ -497,6 +497,24 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 					isAvailable = (spellLevelText.indexOf("0") === -1 || !isConsuming);
 				}	
 			}
+			for(let i = 0; i < document.querySelectorAll("form#ability-use-form")[0].children.length; i++){
+				if("Consume Recharge?" == document.querySelectorAll("form#ability-use-form")[0].children[i].innerText){
+					isFeature=true;
+					if(document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("This feat ") > -1){
+						console.log("Spell Template Manager | Recharge Feat Detected");
+						isAvailable = (document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("depleted") === -1 ||
+						   document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked == false);	
+					}
+				}			
+				if("Consume Spell Slot?" == document.querySelectorAll("form#ability-use-form")[0].children[i]?.children[0]?.innerText){
+					isSpell=true;
+					console.log("Spell Template Manager | Spell Cast Detected");
+					let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
+					let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
+					let isConsuming = document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked;
+					isAvailable = (spellLevelText.indexOf("0") === -1 || !isConsuming);
+				}	
+			}
 			if(!isSpell && !isFeature){
 				isAtWill = true;
 				console.log("At-will Ability Detected");
