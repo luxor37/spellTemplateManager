@@ -108,10 +108,11 @@ class spellTemplateManager {
 				spellTemplateManager.resetItemData();
 				done = true;
 			}else{
+				console.log("Spell Template Manager | Failed to update template.  Retrying. ", index);
 				setTimeout(spellTemplateManager.updateTemplate(scene,template,isConcentration,isSpecialSpell,index+1), 1000);
 			}
 		}else{
-			console.log("Spell Template Manager | Failed to update template");
+			console.log("Spell Template Manager | Failed to update template.");
 			done = true;
 		}
 		
@@ -119,11 +120,11 @@ class spellTemplateManager {
 
 
 	static async evaluateTemplate(data,template){
-		console.log("Spell Template Manager | Evaluating template");
+		console.log("Spell Template Manager | Evaluating template: ", spellTemplateManager.currentItem);
 		if(spellTemplateManager.currentItem !== undefined){
 			let scene=game.scenes.viewed;
 			let isConcentration = spellTemplateManager.currentItem.data.data.components?spellTemplateManager.currentItem.data.data.components?.concentration:false;
-			let isSpecial = (spellTemplateManager.currentItem.data.data.duration.units === "unti");
+			let isSpecial = (spellTemplateManager.currentItem.data.data.duration.units === "unti" || spellTemplateManager.currentItem.data.data.duration.units === "spec");
 			let templates;
 			if(isConcentration){
 				console.log("Spell Template Manager | New concentration spell.  Clearing actor's previous concentration templates.");
@@ -142,6 +143,8 @@ class spellTemplateManager {
 				let updated = await scene.deleteEmbeddedEntity("MeasuredTemplate",deletions);
 			}
 			setTimeout(spellTemplateManager.updateTemplate(scene,template,isConcentration,isSpecial,0), 100);
+		}else{
+			console.log("Spell Template Manager | Could not find current feature data!  Failing!");
 		}
 	}
 
@@ -149,7 +152,6 @@ class spellTemplateManager {
 		console.log("Spell Template Manager | Cleaning Templates: ", Combat.combatant.actor.id);
 		let scene=Combat.scene;
 		let prefilter = scene.data.templates.filter(i => i.flags.spellTemplateManager !== undefined);
-		
 		let templates = prefilter.filter(
 			function(i){
 				return (
@@ -496,8 +498,6 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 					let isConsuming = document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked;
 					isAvailable = (spellLevelText.indexOf("0") === -1 || !isConsuming);
 				}	
-			}
-			for(let i = 0; i < document.querySelectorAll("form#ability-use-form")[0].children.length; i++){
 				if("Consume Recharge?" == document.querySelectorAll("form#ability-use-form")[0].children[i].innerText){
 					isFeature=true;
 					if(document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("This feat ") > -1){
@@ -505,15 +505,7 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 						isAvailable = (document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("depleted") === -1 ||
 						   document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked == false);	
 					}
-				}			
-				if("Consume Spell Slot?" == document.querySelectorAll("form#ability-use-form")[0].children[i]?.children[0]?.innerText){
-					isSpell=true;
-					console.log("Spell Template Manager | Spell Cast Detected");
-					let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
-					let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
-					let isConsuming = document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked;
-					isAvailable = (spellLevelText.indexOf("0") === -1 || !isConsuming);
-				}	
+				}
 			}
 			if(!isSpell && !isFeature){
 				isAtWill = true;
