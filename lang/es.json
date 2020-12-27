@@ -14,5 +14,7 @@
     "spellTemplateManager.unmanagedTemplateAction.delete": "Eliminar",
     "spellTemplateManager.unmanagedTemplateAction.claim": "Reclamarlas",
     "spellTemplateManager.instantaneousSpellFade.name": "Duración del desvanecimiento del conjuro instantánea",
-    "spellTemplateManager.instantaneousSpellFade.hint": "Número de rondas adicionales para mostrar plantillas de conjuros instantáneos"
+    "spellTemplateManager.instantaneousSpellFade.hint": "Número de rondas adicionales para mostrar plantillas de conjuros instantáneos",
+    "spellTemplateManager.worldConcentration.name": "Mantenga la concentración en todas las escenas",
+    "spellTemplateManager.worldConcentration.hint": "Marque para finalizar las plantillas de concentración en todas las escenas cada vez que se lanza un conuro de concentración"
 }
