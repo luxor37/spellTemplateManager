@@ -14,5 +14,7 @@
     "spellTemplateManager.unmanagedTemplateAction.delete": "Delete",
     "spellTemplateManager.unmanagedTemplateAction.claim": "Claim them",
     "spellTemplateManager.instantaneousSpellFade.name": "Instantaneous Spell Fade Duration",
-    "spellTemplateManager.instantaneousSpellFade.hint": "Number of additional rounds to display instantaneous spell templates"
+    "spellTemplateManager.instantaneousSpellFade.hint": "Number of additional rounds to display instantaneous spell templates",
+    "spellTemplateManager.worldConcentration.name": "Maintain concentration across scenes",
+    "spellTemplateManager.worldConcentration.hint": "Check to end concentration templates on all scenes whenever a concentration spell is cast"
 }
