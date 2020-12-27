@@ -3,12 +3,14 @@ class spellTemplateManager {
 	static currentActor = undefined;
 	static currentPlayer = undefined;
 	static currentDurationRounds = undefined;
+	static currentScene = undefined;
 
 	static resetItemData(){
 		spellTemplateManager.currentItem = undefined;
 		spellTemplateManager.currentActor = undefined;
 		spellTemplateManager.currentPlayer = undefined;
 		spellTemplateManager.currentDurationRounds = undefined;
+		spellTemplateManager.currentScene = undefined;
 	}
 
 	static getDuration(){
@@ -38,7 +40,7 @@ class spellTemplateManager {
 			default:
 				spellTemplateManager.currentDurationRounds = -1;
 		}
-		console.log("Spell Template Manager | Spell duration in rounds is ", spellTemplateManager.currentDurationRounds);
+		console.debug("Spell Template Manager | Spell duration in rounds is ", spellTemplateManager.currentDurationRounds);
 	}
 
 	static getData (dialog, html){
@@ -49,6 +51,7 @@ class spellTemplateManager {
 		spellTemplateManager.currentDurationRounds = undefined;
 		spellTemplateManager.currentItem=dialog.item;
 		spellTemplateManager.currentActor=dialog.item.options.actor;
+		spellTemplateManager.currentScene=game.scenes.viewed._id;
 		spellTemplateManager.currentPlayer=game.userId;
 		if(spellTemplateManager.currentItem !== undefined) spellTemplateManager.getDuration();
 	}
@@ -73,7 +76,8 @@ class spellTemplateManager {
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
 							duration: spellTemplateManager.currentDurationRounds,
-							special: (isSpecialSpell)
+							special: (isSpecialSpell),
+							scene: scene._id
 						}
 					},borderColor:("#"+game.settings.get('spellTemplateManager', 'concentrationTemplateColor'))};
 				}else if(spellTemplateManager.currentDurationRounds>0){
@@ -82,7 +86,8 @@ class spellTemplateManager {
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
 							duration: spellTemplateManager.currentDurationRounds,
-							special: (isSpecialSpell)
+							special: (isSpecialSpell),
+							scene: spellTemplateManager.currentScene
 						}
 					},borderColor:("#"+game.settings.get('spellTemplateManager', 'enduringTemplateColor'))};
 				}else if(spellTemplateManager.currentDurationRounds<0){
@@ -91,7 +96,8 @@ class spellTemplateManager {
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
 							duration: spellTemplateManager.currentDurationRounds,
-							special: (isSpecialSpell)
+							special: (isSpecialSpell),
+							scene: spellTemplateManager.currentScene
 						}
 					},borderColor:("#"+game.settings.get('spellTemplateManager', 'specialTemplateColor'))};
 				}else{
@@ -100,7 +106,8 @@ class spellTemplateManager {
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
 							duration: spellTemplateManager.currentDurationRounds,
-							special: (isSpecialSpell)
+							special: (isSpecialSpell),
+							scene: spellTemplateManager.currentScene
 						}
 					},borderColor:("#"+game.settings.get('spellTemplateManager', 'standardTemplateColor'))};
 				}
@@ -108,7 +115,7 @@ class spellTemplateManager {
 				spellTemplateManager.resetItemData();
 				done = true;
 			}else{
-				console.log("Spell Template Manager | Failed to update template.  Retrying. ", index);
+				console.debug("Spell Template Manager | Failed to update template.  Retrying. ", index);
 				setTimeout(spellTemplateManager.updateTemplate(scene,template,isConcentration,isSpecialSpell,index+1), 1000);
 			}
 		}else{
@@ -120,29 +127,37 @@ class spellTemplateManager {
 
 
 	static async evaluateTemplate(data,template){
-		console.log("Spell Template Manager | Evaluating template: ", spellTemplateManager.currentItem);
+		console.log("Spell Template Manager | Evaluating template");
+		console.debug(spellTemplateManager.currentItem);
 		if(spellTemplateManager.currentItem !== undefined){
-			let scene=game.scenes.viewed;
 			let isConcentration = spellTemplateManager.currentItem.data.data.components?spellTemplateManager.currentItem.data.data.components?.concentration:false;
 			let isSpecial = (spellTemplateManager.currentItem.data.data.duration.units === "unti" || spellTemplateManager.currentItem.data.data.duration.units === "spec");
-			let templates;
 			if(isConcentration){
-				console.log("Spell Template Manager | New concentration spell.  Clearing actor's previous concentration templates.");
-				templates = scene.data.templates.filter(
-					function (i){
-						if(i.flags.spellTemplateManager !== undefined){
-							return ((i.actor === spellTemplateManager.currentActor.data._id || i.actor == undefined) && i._id !== template._id && i.user === game.userId && i.flags.spellTemplateManager.concentration === true);
-						}else{
-							return false;
-						}					
-					}
-				);
+				console.log("New concentration spell.  Clearing actor's previous concentration templates.");
 			}
-			if(templates !== undefined) {
-				let deletions = templates.map(i => i._id);
-				let updated = await scene.deleteEmbeddedEntity("MeasuredTemplate",deletions);
-			}
-			setTimeout(spellTemplateManager.updateTemplate(scene,template,isConcentration,isSpecial,0), 100);
+			game.scenes.forEach(scene => {
+				console.debug(scene.name);
+				let templates = undefined;
+				if(isConcentration){
+					templates = scene.data.templates.filter(	
+						function (i,scene){
+							if(i.flags.spellTemplateManager !== undefined){
+								return ((spellTemplateManager.currentActor.data._id === i.flags.spellTemplateManager.actor) && (i._id !== template._id && i.user === game.userId) && (i.flags.spellTemplateManager.concentration === true) && (game.settings.get("spellTemplateManager", "worldConcentration") || (scene.id == i.flags.spellTemplateManager.scene)));
+							}else{
+								return false;
+							}					
+						}
+					);
+				}
+				console.debug("Final deletions: ",templates);
+				if(templates !== undefined) {
+					let deletions = templates.map(i => i._id);
+					let updated = scene.deleteEmbeddedEntity("MeasuredTemplate",deletions);					
+				}else{
+					console.log("Spell Template Manager | Nothing to delete!");
+				}				
+			});
+			setTimeout(spellTemplateManager.updateTemplate(game.scenes.viewed,template,isConcentration,isSpecial,0), 100);
 		}else{
 			console.log("Spell Template Manager | Could not find current feature data!  Failing!");
 		}
@@ -344,7 +359,8 @@ class spellTemplateManager {
 							concentration: false, 
 							actor: turnActor.id, 
 							duration: valueInRounds,
-							special: spellIsSpecial
+							special: spellIsSpecial,
+							scene: Combat.scene._id
 						}
 					},borderColor:("#"+game.settings.get('spellTemplateManager', (spellIsSpecial?'specialTemplateColor':'enduringTemplateColor')))};
 					let updated = scene.updateEmbeddedEntity("MeasuredTemplate", update);	
@@ -461,6 +477,17 @@ function registerSpellTemplateManagerSettings(){
 			onChange: value => console.log(value)
 		}
 	);
+       game.settings.register(
+		"spellTemplateManager","worldConcentration", {
+                    name: game.i18n.localize("spellTemplateManager.worldConcentration.name"),
+                    hint: game.i18n.localize("spellTemplateManager.worldConcentration.hint"),
+                    type: Boolean,
+                    default: true,
+                    config: true,
+                    scope: "world",
+                    onChange: value => console.log(value)
+                }
+      );
 }
 
 
@@ -485,14 +512,14 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 				if("Consume Available Usage?" == document.querySelectorAll("form#ability-use-form")[0].children[i].innerText){
 					isFeature=true;
 					if(document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("This feat has") > -1){
-						console.log("Spell Template Manager | Feature Detected");
+						console.debug("Spell Template Manager | Feature Detected");
 						isAvailable = (document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf(" 0 of") === -1 ||
 						   document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked == false);	
 					}
 				}			
 				if("Consume Spell Slot?" == document.querySelectorAll("form#ability-use-form")[0].children[i]?.children[0]?.innerText){
 					isSpell=true;
-					console.log("Spell Template Manager | Spell Cast Detected");
+					console.debug("Spell Template Manager | Spell Cast Detected");
 					let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
 					let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
 					let isConsuming = document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked;
@@ -501,7 +528,7 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 				if("Consume Recharge?" == document.querySelectorAll("form#ability-use-form")[0].children[i].innerText){
 					isFeature=true;
 					if(document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("This feat ") > -1){
-						console.log("Spell Template Manager | Recharge Feat Detected");
+						console.debug("Spell Template Manager | Recharge Feat Detected");
 						isAvailable = (document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("depleted") === -1 ||
 						   document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked == false);	
 					}
@@ -509,14 +536,14 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 			}
 			if(!isSpell && !isFeature){
 				isAtWill = true;
-				console.log("At-will Ability Detected");
+				console.debug("At-will Ability Detected");
 			}
 			if( ((isSpell || isFeature) && isAvailable) ||
 			    (isAtWill)
 			){
 				await spellTemplateManager.getData(dialog,html);
 			}else{
-				console.log("Spell Template Manager | Unknown Form: ",document.querySelectorAll("form#ability-use-form")[0].children);
+				console.debug("Spell Template Manager | Unknown Form: ",document.querySelectorAll("form#ability-use-form")[0].children);
 			}
 		}
 	);
@@ -526,17 +553,17 @@ Hooks.on("createMeasuredTemplate",spellTemplateManager.evaluateTemplate);
 
 Hooks.on("preUpdateCombat",(Combat,Round,Diff,User) => {
 	if((User == game.user._id) && game.user.isGM){
-		console.log("Spell Template Manager | Initiating PUC as GM!");
+		console.debug("Spell Template Manager | Initiating PUC as GM!");
 		spellTemplateManager.preUpdateCombat(Combat,User);
 	}else if(User == game.user._id  && !game.user.isGM){
-		console.log("Spell Template Manager | Initiating PUC as PC!");
+		console.debug("Spell Template Manager | Initiating PUC as PC!");
 		spellTemplateManager.preUpdateCombat(Combat);
 	}
 });
 
 Hooks.on("updateCombat", (Combat,Round,Diff,User) => {
 	if(game.user.isGM){
-		console.log("Spell Template Manager | Initiating UC as GM!");
+		console.debug("Spell Template Manager | Initiating UC as GM!");
 		spellTemplateManager.updateCombat(Combat);
 	}
 });
