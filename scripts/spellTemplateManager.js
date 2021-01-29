@@ -368,16 +368,18 @@ class spellTemplateManager {
 		}
 	}
 
-	static async updateCombat(Combat){
-		await spellTemplateManager.ageTemplates(Combat);
-		await spellTemplateManager.cleanupTemplates(Combat);
-		
+	static async updateCombat(Combat) {
+		if (Combat.combatant) {
+			await spellTemplateManager.ageTemplates(Combat);
+			await spellTemplateManager.cleanupTemplates(Combat);
+		}
 	}
 
 	static async preUpdateCombat(Combat, userID=''){
-		await spellTemplateManager.cleanupTemplates(Combat);
-		await spellTemplateManager.manageUnmanaged(Combat,(userID?true:false));
-
+		if (Combat.combatant) {
+			await spellTemplateManager.cleanupTemplates(Combat);
+			await spellTemplateManager.manageUnmanaged(Combat, (userID ? true : false));
+		}
 	}
 
 	static resetTemplateBorders(){
