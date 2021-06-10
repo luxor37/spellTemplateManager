@@ -6,6 +6,7 @@ class spellTemplateManager {
 	static currentScene = undefined;
 	static inPUC = false;
 	static capture = undefined;
+	static currentException = undefined;
 
 	static resetItemData(){
 		spellTemplateManager.currentItem = undefined;
@@ -13,6 +14,7 @@ class spellTemplateManager {
 		spellTemplateManager.currentPlayer = undefined;
 		spellTemplateManager.currentDurationRounds = undefined;
 		spellTemplateManager.currentScene = undefined;
+		spellTemplateManager.currentException = undefined;
 	}
 
 	static getDuration(){
@@ -56,6 +58,11 @@ class spellTemplateManager {
 		spellTemplateManager.currentActor=dialog.item.actor;
 		spellTemplateManager.currentScene=game.scenes.viewed.id;
 		spellTemplateManager.currentPlayer=game.userId;
+		if(dialog.item.data.flags.spellTemplateManager != undefined){
+			spellTemplateManager.currentException=dialog.item.data.flags.spellTemplateManager["ignore-duration"];
+		}else{
+			spellTemplateManager.currentException=undefined;
+		}		
 		if(spellTemplateManager.currentItem !== undefined) spellTemplateManager.getDuration();
 	}
 
@@ -67,7 +74,7 @@ class spellTemplateManager {
 		let updated = await scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);
 	}
 
-	static updateTemplate(scene,template,isConcentration,isSpecialSpell,index){
+	static updateTemplate(scene,template,ignoreDuration,isConcentration,isSpecialSpell,index){
 		console.log("UPDATE TEMPLATE");
 		let done = false;
 		if(index < 10 && !done){
@@ -79,7 +86,7 @@ class spellTemplateManager {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
-							duration: spellTemplateManager.currentDurationRounds,
+							duration: (ignoreDuration?0:spellTemplateManager.currentDurationRounds),
 							special: (isSpecialSpell),
 							scene: scene.id
 						}
@@ -89,7 +96,7 @@ class spellTemplateManager {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
-							duration: spellTemplateManager.currentDurationRounds,
+							duration: (ignoreDuration?0:spellTemplateManager.currentDurationRounds),
 							special: (isSpecialSpell),
 							scene: spellTemplateManager.currentScene
 						}
@@ -99,7 +106,7 @@ class spellTemplateManager {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
-							duration: spellTemplateManager.currentDurationRounds,
+							duration: (ignoreDuration?0:spellTemplateManager.currentDurationRounds),
 							special: (isSpecialSpell),
 							scene: spellTemplateManager.currentScene
 						}
@@ -109,7 +116,7 @@ class spellTemplateManager {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
-							duration: spellTemplateManager.currentDurationRounds,
+							duration: (ignoreDuration?0:spellTemplateManager.currentDurationRounds),
 							special: (isSpecialSpell),
 							scene: spellTemplateManager.currentScene
 						}
@@ -120,7 +127,7 @@ class spellTemplateManager {
 				done = true;
 			}else{
 				console.debug("Spell Template Manager | Failed to update template.  Retrying. ", index);
-				setTimeout(spellTemplateManager.updateTemplate(scene,template,isConcentration,isSpecialSpell,index+1), 1000);
+				setTimeout(spellTemplateManager.updateTemplate(scene,template,ignoreDuration,isConcentration,isSpecialSpell,index+1), 1000);
 			}
 		}else{
 			console.log("Spell Template Manager | Failed to update template.");
@@ -135,6 +142,7 @@ class spellTemplateManager {
 		if(spellTemplateManager.currentItem !== undefined){
 			let isConcentration = spellTemplateManager.currentItem.data.data.components?spellTemplateManager.currentItem.data.data.components?.concentration:false;
 			let isSpecial = (spellTemplateManager.currentItem.data.data.duration.units === "unti" || spellTemplateManager.currentItem.data.data.duration.units === "spec");
+			let ignoreDuration = (spellTemplateManager.currentException == "checked" ? true : false);
 			if(isConcentration){
 				console.log("New concentration spell.  Clearing actor's previous concentration templates.");
 				game.scenes.forEach(scene => {
@@ -160,7 +168,7 @@ class spellTemplateManager {
 				});
 
 			}
-			setTimeout(spellTemplateManager.updateTemplate(game.scenes.viewed,template,isConcentration,isSpecial,0), 100);
+			setTimeout(spellTemplateManager.updateTemplate(game.scenes.viewed,template,ignoreDuration,isConcentration,isSpecial,0), 100);
 		}else{
 			console.log("Spell Template Manager | Could not find current feature data!  Failing!");
 		}
@@ -514,8 +522,6 @@ Hooks.once('ready', () => {
 });
 
 Hooks.on(`renderItemSheet`, (app, html) =>{
-	console.log("Here we go!",app);
-	console.log("Also!",html);
 	spellTemplateManager.capture = html;
   const template_types = ["cone", "circle", "rect", "ray"];
   const add = ".tab.details";
