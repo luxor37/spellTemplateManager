@@ -5,6 +5,7 @@ class spellTemplateManager {
 	static currentDurationRounds = undefined;
 	static currentScene = undefined;
 	static inPUC = false;
+	static capture = undefined;
 
 	static resetItemData(){
 		spellTemplateManager.currentItem = undefined;
@@ -46,6 +47,7 @@ class spellTemplateManager {
 
 	static getData (dialog, html){
 		console.log("Spell Template Manager | Collecting Item Data");
+		console.log(dialog);
 		spellTemplateManager.currentItem = undefined;
 		spellTemplateManager.currentActor = undefined;
 		spellTemplateManager.currentPlayer = undefined;
@@ -81,7 +83,7 @@ class spellTemplateManager {
 							special: (isSpecialSpell),
 							scene: scene.id
 						}
-					},borderColor:("#"+game.settings.get('spellTemplateManager', 'concentrationTemplateColor'))};
+					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'concentrationTemplateColor')).substring(1,7))};
 				}else if(spellTemplateManager.currentDurationRounds>0){
 					update = {_id: template.id, flags: {
 						"spellTemplateManager":{
@@ -91,7 +93,7 @@ class spellTemplateManager {
 							special: (isSpecialSpell),
 							scene: spellTemplateManager.currentScene
 						}
-					},borderColor:("#"+game.settings.get('spellTemplateManager', 'enduringTemplateColor'))};
+					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'enduringTemplateColor')).substring(1,7))};
 				}else if(spellTemplateManager.currentDurationRounds<0){
 					update = {_id: template.id, flags: {
 						"spellTemplateManager":{
@@ -101,7 +103,7 @@ class spellTemplateManager {
 							special: (isSpecialSpell),
 							scene: spellTemplateManager.currentScene
 						}
-					},borderColor:("#"+game.settings.get('spellTemplateManager', 'specialTemplateColor'))};
+					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'specialTemplateColor')).substring(1,7))};
 				}else{
 					update = {_id: template.id, flags: {
 						"spellTemplateManager":{
@@ -111,7 +113,7 @@ class spellTemplateManager {
 							special: (isSpecialSpell),
 							scene: spellTemplateManager.currentScene
 						}
-					},borderColor:("#"+game.settings.get('spellTemplateManager', 'standardTemplateColor'))};
+					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'standardTemplateColor')).substring(1,7))};
 				}
 				let updated = scene.updateEmbeddedDocuments("MeasuredTemplate", [update]);
 				spellTemplateManager.resetItemData();
@@ -369,7 +371,7 @@ class spellTemplateManager {
 							special: spellIsSpecial,
 							scene: Combat.scene.id
 						}
-					},borderColor:("#"+game.settings.get('spellTemplateManager', (spellIsSpecial?'specialTemplateColor':'enduringTemplateColor')))};
+					},borderColor:(game.settings.get('spellTemplateManager', (spellIsSpecial?'specialTemplateColor':'enduringTemplateColor')))};
 					let updated = scene.updateEmbeddedDocuments("MeasuredTemplate", [update]);	
 			}
 		}
@@ -391,69 +393,68 @@ class spellTemplateManager {
 	}
 
 	static resetTemplateBorders(){
+		
 		game.scenes.forEach(i => {i.data.templates.forEach(j => {
 			let update = {};
 			if(j.data.flags.spellTemplateManager?.concentration){
-				update = {id: j.id, borderColor:("#"+game.settings.get('spellTemplateManager', 'concentrationTemplateColor'))};
+				update = {_id: j.id, borderColor:("#"+(game.settings.get('spellTemplateManager', 'concentrationTemplateColor')).substring(1,7))};
 			}else if(j.data.flags.spellTemplateManager?.duration > 0){
-				update = {id: j.id, borderColor:("#"+game.settings.get('spellTemplateManager', 'enduringTemplateColor'))};
+				update = {_id: j.id, borderColor:("#"+(game.settings.get('spellTemplateManager', 'enduringTemplateColor')).substring(1,7))};
 			}else if(j.data.flags.spellTemplateManager?.special){
-				update = {id: j.id, borderColor:("#"+game.settings.get('spellTemplateManager', 'specialTemplateColor'))};
+				update = {_id: j.id, borderColor:("#"+(game.settings.get('spellTemplateManager', 'specialTemplateColor')).substring(1,7))};
 			}else {
-				update = {id: j.id, borderColor:("#"+game.settings.get('spellTemplateManager', 'standardTemplateColor'))};
+				update = {_id: j.id, borderColor:("#"+(game.settings.get('spellTemplateManager', 'standardTemplateColor')).substring(1,7))};
 			}				
 			let updated = i.updateEmbeddedDocuments("MeasuredTemplate", [update]);
 
 		})});
+
 	}	
 
 }
 
 function registerSpellTemplateManagerSettings(){
-	game.settings.register(
-		"spellTemplateManager", "standardTemplateColor", {
-			name: game.i18n.localize("spellTemplateManager.standardTemplateColor.name"),
-			hint: game.i18n.localize("spellTemplateManager.standardTemplateColor.hint"),
-			scope: "world",
-			config: true,
-			default: "000000",
-			type: String,
-			onChange: () => { spellTemplateManager.resetTemplateBorders();}
-		}
-	);
-	game.settings.register(
-		"spellTemplateManager", "concentrationTemplateColor", {
-			name: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.name"),
-			hint: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.hint"),
-			scope: "world",
-			config: true,
-			default: "ffff00",
-			type: String,
-			onChange: () => { spellTemplateManager.resetTemplateBorders();}
-		}
-	);
-	game.settings.register(
-		"spellTemplateManager", "enduringTemplateColor", {
-			name: game.i18n.localize("spellTemplateManager.enduringTemplateColor.name"),
-			hint: game.i18n.localize("spellTemplateManager.enduringTemplateColor.hint"),
-			scope: "world",
-			config: true,
-			default: "00ff00",
-			type: String,
-			onChange: () => { spellTemplateManager.resetTemplateBorders();}
-		}
-	);
-	game.settings.register(
-		"spellTemplateManager", "specialTemplateColor", {
-			name: game.i18n.localize("spellTemplateManager.specialTemplateColor.name"),
-			hint: game.i18n.localize("spellTemplateManager.specialTemplateColor.hint"),
-			scope: "world",
-			config: true,
-			default: "ffffff",
-			type: String,
-			onChange: () => { spellTemplateManager.resetTemplateBorders();}
-		}
-	);
+
+	new window.Ardittristan.ColorSetting("spellTemplateManager", "standardTemplateColor", {
+		name: game.i18n.localize("spellTemplateManager.standardTemplateColor.name"),
+		hint: game.i18n.localize("spellTemplateManager.standardTemplateColor.hint"),
+		label: "Click to select color",
+		restricted: true,
+		defaultColor: "#000000ff",
+		scope: "world",
+		onChange: (value) => { spellTemplateManager.resetTemplateBorders();}
+	});
+
+	new window.Ardittristan.ColorSetting("spellTemplateManager", "concentrationTemplateColor", {
+		name: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.name"),
+		hint: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.hint"),
+		label: "Click to select color",
+		restricted: true,
+		defaultColor: "#ffff00ff",
+		scope: "world",
+		onChange: (value) => { spellTemplateManager.resetTemplateBorders();}
+	});
+
+	new window.Ardittristan.ColorSetting("spellTemplateManager", "enduringTemplateColor", {
+		name: game.i18n.localize("spellTemplateManager.enduringTemplateColor.name"),
+		hint: game.i18n.localize("spellTemplateManager.enduringTemplateColor.hint"),
+		label: "Click to select color",
+		restricted: true,
+		defaultColor: "#00ff00ff",
+		scope: "world",
+		onChange: (value) => { spellTemplateManager.resetTemplateBorders();}
+	});
+
+	new window.Ardittristan.ColorSetting("spellTemplateManager", "specialTemplateColor", {
+		name: game.i18n.localize("spellTemplateManager.specialTemplateColor.name"),
+		hint: game.i18n.localize("spellTemplateManager.specialTemplateColor.hint"),
+		label: "Click to select color",
+		restricted: true,
+		defaultColor: "#ffffffff",
+		scope: "world",
+		onChange: (value) => { spellTemplateManager.resetTemplateBorders();}
+	});
+
 	game.settings.register(
 		"spellTemplateManager", "unmanagedTemplateAction", {
   			name: game.i18n.localize("spellTemplateManager.unmanagedTemplateAction.name"),
@@ -498,12 +499,50 @@ function registerSpellTemplateManagerSettings(){
                     onChange: value => console.log(value)
                 }
       );
+
 }
 
 
 Hooks.once("init", () => {
     registerSpellTemplateManagerSettings();
 });
+
+Hooks.once('ready', () => {
+    try{window.Ardittristan.ColorSetting.tester} catch {
+        ui.notifications.notify('Please make sure you have the "lib - ColorSettings" module installed and enabled.', "error");
+    }
+});
+
+Hooks.on(`renderItemSheet`, (app, html) =>{
+	console.log("Here we go!",app);
+	console.log("Also!",html);
+	spellTemplateManager.capture = html;
+  const template_types = ["cone", "circle", "rect", "ray"];
+  const add = ".tab.details";
+
+  //do not add new value to a item that doesn't need it
+  if(app.object.type !== "spell" && !template_types.includes(app.object.data.data.target.type)) return;
+  //define what the value is
+  let status = app.object.getFlag(`spellTemplateManager`,`ignore-duration`) ?? "";
+  
+  //add the checkbox to the item
+  html.find(add).append(`
+	<h3 class="form-header">Spell Templates</h3>
+	<div class="form-group">
+    <label class="checkbox">
+      <input type="checkbox" name="spell.template.removal" ${status}>
+      Ignore Spell Duration (Remove Immediately)
+    </label>
+	</div>
+  `);
+  
+  //react to the checkbox being changed, saving the value in a flag
+  $('input[name="spell.template.removal"]')[0].onchange = (event) => {
+    let status = event.target.checked ? "checked" : "";
+    app.object.setFlag(`spellTemplateManager`, `ignore-duration`, status);
+  }
+});
+
 
 Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 	console.log("Spell Template Manager | Ability Use Dialog Capture");
