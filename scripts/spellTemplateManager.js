@@ -68,10 +68,30 @@ class spellTemplateManager {
 
 	static async deleteAllTemplates(){
 		console.log("Spell Template Manager | Cleaning All Templates");
-		let scene=game.scenes.viewed;
-		let templates = scene.data.templates.filter(i => i.data.user === game.userId);
-		let deletions = templates.map(i => i.id);
-		let updated = await scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);
+		let scenes = game.scenes;
+		scenes.forEach(scene => {
+
+/*
+			let templates = scene.data.templates.filter(i => i.data.user === game.userId);
+			let deletions = templates.map(i => i.id);
+			let updated = await scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);
+*/
+			console.debug(scene.name);
+			let templates = undefined;
+			templates = scene.data.templates/*.filter(	
+				function (i,scene){
+					return true;					
+				}
+			)*/;
+			console.debug("Final deletions: ",templates);
+			if(templates !== undefined) {
+				let deletions = templates.map(i => i.id);
+				let updated = scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);					
+			}else{
+				console.log("Spell Template Manager | Nothing to delete!");
+			}
+		});
+			
 	}
 
 	static updateTemplate(scene,template,ignoreDuration,isConcentration,isSpecialSpell,index){
@@ -123,7 +143,12 @@ class spellTemplateManager {
 					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'standardTemplateColor')).substring(1,7))};
 				}
 				let updated = scene.updateEmbeddedDocuments("MeasuredTemplate", [update]);
-				spellTemplateManager.resetItemData();
+
+				if(game.settings.get('spellTemplateManager','usingAT')){
+					let roundSeconds = game.settings.get("about-time", "seconds-per-round");					
+					game.Gametime.notifyIn({seconds: spellTemplateManager.currentDurationRounds*roundSeconds},"spellTemplateManager",template.id);
+				}
+				spellTemplateManager.resetItemData();  
 				done = true;
 			}else{
 				console.debug("Spell Template Manager | Failed to update template.  Retrying. ", index);
@@ -135,7 +160,16 @@ class spellTemplateManager {
 		}
 		
 	}
+	
 
+	static async deleteTemplate(templateId){
+		console.log("Spell Template Manager | Deleting Template: ", templateId);
+		game.scenes.forEach(scene => {
+			let templates = scene.data.templates.filter(i => i.id == templateId);
+			let deletions = templates.map(i => i.id);
+			let updated = scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);
+		});
+	}
 
 	static async evaluateTemplate(template,data,userID){
 		console.log("Spell Template Manager | Evaluating template");
@@ -381,6 +415,12 @@ class spellTemplateManager {
 						}
 					},borderColor:(game.settings.get('spellTemplateManager', (spellIsSpecial?'specialTemplateColor':'enduringTemplateColor')))};
 					let updated = scene.updateEmbeddedDocuments("MeasuredTemplate", [update]);	
+
+
+					if(game.settings.get('spellTemplateManager','usingAT')){
+						let roundSeconds = game.settings.get("about-time", "seconds-per-round");					
+						game.Gametime.doIn({seconds: spellTemplateManager.currentDurationRounds*roundSeconds},() => spellTemplateManager.deleteTemplate(template.id));
+					}
 			}
 		}
 	}
@@ -388,13 +428,17 @@ class spellTemplateManager {
 	static async updateCombat(Combat) {
 		if (Combat.combatant) {
 			await spellTemplateManager.ageTemplates(Combat);
-			await spellTemplateManager.cleanupTemplates(Combat);
+			if(!game.settings.get("spellTemplateManager","usingAT")){
+				await spellTemplateManager.cleanupTemplates(Combat);
+			}
 		}
 	}
 
 	static async preUpdateCombat(Combat, userID=''){
 		if (Combat.combatant) {
-			await spellTemplateManager.cleanupTemplates(Combat);
+			if(!game.settings.get("spellTemplateManager","usingAT")){
+				await spellTemplateManager.cleanupTemplates(Combat);
+			}
 			await spellTemplateManager.manageUnmanaged(Combat, (userID ? true : false));
 		}
 		spellTemplateManager.inPUC = false;
@@ -502,6 +546,17 @@ function registerSpellTemplateManagerSettings(){
                     hint: game.i18n.localize("spellTemplateManager.worldConcentration.hint"),
                     type: Boolean,
                     default: true,
+                    config: true,
+                    scope: "world",
+                    onChange: value => console.log(value)
+                }
+      );
+       game.settings.register(
+		"spellTemplateManager","usingAT", {
+                    name: "Using About Time",
+                    hint: "Checking this box will disable STM processing and offload to the About Time module.",
+                    type: Boolean,
+                    default: false,
                     config: true,
                     scope: "world",
                     onChange: value => console.log(value)
@@ -635,5 +690,11 @@ Hooks.on("updateCombat", (Combat,Round,Diff,User) => {
 			console.debug("Spell Template Manager | preUpdateCombat not complete: ",spellTemplateManager.inPUC);
 		}
 	}, 30);	
+});
+
+Hooks.on("about-time.eventTrigger", (...args) => {
+	if(args[0] == "spellTemplateManager"){
+		spellTemplateManager.deleteTemplate(args[1]);
+	}
 });
 globalThis.spellTemplateManager = spellTemplateManager;
