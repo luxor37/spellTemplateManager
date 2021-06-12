@@ -7,6 +7,11 @@ class spellTemplateManager {
 	static inPUC = false;
 	static capture = undefined;
 	static currentException = undefined;
+	static usingAT = false;
+	static enforceConcentration = true;
+	static worldConcentration = true;
+	static instantaneousSpellFade = 0;
+	static unmanagedTemplateAction = "prompt";
 
 	static resetItemData(){
 		spellTemplateManager.currentItem = undefined;
@@ -28,7 +33,7 @@ class spellTemplateManager {
 				spellTemplateManager.currentDurationRounds = value * 10 * 60;
 				break;
 			case "inst":
-				spellTemplateManager.currentDurationRounds = 0 + game.settings.get("spellTemplateManager", "instantaneousSpellFade");
+				spellTemplateManager.currentDurationRounds = 0 + spellTemplateManager.instantaneousSpellFade;
 				break;
 			case "minute":
 			case "minutes":
@@ -71,18 +76,9 @@ class spellTemplateManager {
 		let scenes = game.scenes;
 		scenes.forEach(scene => {
 
-/*
-			let templates = scene.data.templates.filter(i => i.data.user === game.userId);
-			let deletions = templates.map(i => i.id);
-			let updated = await scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);
-*/
 			console.debug(scene.name);
 			let templates = undefined;
-			templates = scene.data.templates/*.filter(	
-				function (i,scene){
-					return true;					
-				}
-			)*/;
+			templates = scene.data.templates;
 			console.debug("Final deletions: ",templates);
 			if(templates !== undefined) {
 				let deletions = templates.map(i => i.id);
@@ -146,7 +142,7 @@ class spellTemplateManager {
 
 				if(game.settings.get('spellTemplateManager','usingAT')){
 					let roundSeconds = game.settings.get("about-time", "seconds-per-round");					
-					game.Gametime.notifyIn({seconds: spellTemplateManager.currentDurationRounds*roundSeconds},"spellTemplateManager",template.id);
+					game.Gametime.notifyIn({seconds: ignoreDuration?6:spellTemplateManager.currentDurationRounds*roundSeconds},"spellTemplateManager",template.id);
 				}
 				spellTemplateManager.resetItemData();  
 				done = true;
@@ -177,30 +173,39 @@ class spellTemplateManager {
 			let isConcentration = spellTemplateManager.currentItem.data.data.components?spellTemplateManager.currentItem.data.data.components?.concentration:false;
 			let isSpecial = (spellTemplateManager.currentItem.data.data.duration.units === "unti" || spellTemplateManager.currentItem.data.data.duration.units === "spec");
 			let ignoreDuration = (spellTemplateManager.currentException == "checked" ? true : false);
-			if(isConcentration){
-				console.log("New concentration spell.  Clearing actor's previous concentration templates.");
+			if(isConcentration && spellTemplateManager.enforceConcentration){
+				console.log("Spell Template Manager | New concentration spell.  Clearing actor's previous concentration templates.");
 				game.scenes.forEach(scene => {
 					console.debug(scene.name);
-					let templates = undefined;
-					templates = scene.data.templates.filter(	
-						function (i,scene){
+					let filtertemplates = scene.data.templates;
+					console.debug("Filtering for world concentration",spellTemplateManager.worldConcentration);
+					filtertemplates = filtertemplates.filter(i => {
+						scene = i.parent; 
+						return (i.data.flags.spellTemplateManager !== undefined)?(spellTemplateManager.worldConcentration?true:(scene.id == game.scenes.viewed.id)):false;
+					});
+					console.debug(filtertemplates);
+					console.debug("Filtering for concentration");
+					filtertemplates = filtertemplates.filter(i => {
 							scene = i.parent;
 							if(i.data.flags.spellTemplateManager !== undefined){
-								return ((spellTemplateManager.currentActor.data._id === i.data.flags.spellTemplateManager.actor) && (i.id !== template.id && i.data.user === game.userId) && (i.data.flags.spellTemplateManager.concentration === true) && (game.settings.get("spellTemplateManager", "worldConcentration") || (scene.id == i.data.flags.spellTemplateManager.scene)));
+								//try{
+									return ((spellTemplateManager.currentActor.data._id === i.data.flags.spellTemplateManager.actor) && (i.id !== template.id) && (i.data.user === game.userId) && (i.data.flags.spellTemplateManager.concentration === true) && (scene.id == i.data.flags.spellTemplateManager.scene));
+								//}catch{
+								//	console.log(i);
+								//}
 							}else{
 								return false;
 							}					
 						}
 					);
-					console.debug("Final deletions: ",templates);
-					if(templates !== undefined) {
-						let deletions = templates.map(i => i.id);
+					console.debug("Final deletions: ",filtertemplates);
+					if(filtertemplates !== undefined) {
+						let deletions = filtertemplates.map(i => i.id);
 						let updated = scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);					
 					}else{
 						console.log("Spell Template Manager | Nothing to delete!");
 					}				
 				});
-
 			}
 			setTimeout(spellTemplateManager.updateTemplate(game.scenes.viewed,template,ignoreDuration,isConcentration,isSpecial,0), 100);
 		}else{
@@ -354,8 +359,10 @@ class spellTemplateManager {
 		let controlling = Combat.scene.data.templates.filter(i => i.data.flags.spellTemplateManager !== undefined);
 		let aging = controlling.filter(i => i.data.flags.spellTemplateManager.actor === Combat.combatant.actor.id);
 		for(let i = 0; i < aging.length; i++){
+				console.debug("Before: ",i);
 				let update = {_id: aging[i].id, flags: {"spellTemplateManager":{duration: aging[i].data.flags.spellTemplateManager.duration-1}}};
 				let updated = await Combat.scene.updateEmbeddedDocuments("MeasuredTemplate",[update]);
+				console.debug("After: ",i);
 		}
 		console.debug("Spell Template Manager | Aging templates done.");
 	}
@@ -369,7 +376,7 @@ class spellTemplateManager {
 		let name = turnActor.name;
 		let managing = scene.data.templates.filter(i => i.data.flags.spellTemplateManager === undefined && (GM || i.data.user === game.userId));
 		for(let i = 0; i < managing.length; i++){
-			let action = game.settings.get("spellTemplateManager","unmanagedTemplateAction");			
+			let action = spellTemplateManager.unmanagedTemplateAction;			
 			let response = null;
 			if(action === "prompt"){
 				await canvas.animatePan({x : managing[i].data.x, y : managing[i].data.y, duration : 250});
@@ -419,7 +426,7 @@ class spellTemplateManager {
 
 					if(game.settings.get('spellTemplateManager','usingAT')){
 						let roundSeconds = game.settings.get("about-time", "seconds-per-round");					
-						game.Gametime.doIn({seconds: spellTemplateManager.currentDurationRounds*roundSeconds},() => spellTemplateManager.deleteTemplate(template.id));
+						game.Gametime.notifyIn({seconds: spellTemplateManager.currentDurationRounds*roundSeconds},"spellTemplateManager",template.id);
 					}
 			}
 		}
@@ -427,8 +434,8 @@ class spellTemplateManager {
 
 	static async updateCombat(Combat) {
 		if (Combat.combatant) {
-			await spellTemplateManager.ageTemplates(Combat);
-			if(!game.settings.get("spellTemplateManager","usingAT")){
+			if(!spellTemplateManager.usingAT){
+				await spellTemplateManager.ageTemplates(Combat);
 				await spellTemplateManager.cleanupTemplates(Combat);
 			}
 		}
@@ -436,7 +443,7 @@ class spellTemplateManager {
 
 	static async preUpdateCombat(Combat, userID=''){
 		if (Combat.combatant) {
-			if(!game.settings.get("spellTemplateManager","usingAT")){
+			if(!spellTemplateManager.usingAT){
 				await spellTemplateManager.cleanupTemplates(Combat);
 			}
 			await spellTemplateManager.manageUnmanaged(Combat, (userID ? true : false));
@@ -461,6 +468,31 @@ class spellTemplateManager {
 
 		})});
 
+	}
+
+
+	static createATEvents(){
+		console.log("Spell Template Manager | Creating About Time notification events");
+		game.scenes.forEach(i => {i.data.templates.forEach(j => {
+			
+
+			let searchID = j.id;
+			let match = false;
+			for(let i = 0; i < game.Gametime.ElapsedTime._eventQueue.array.length; i++){
+				if(game.Gametime.ElapsedTime._eventQueue.array[i]._args[0]=="spellTemplateManager"){
+					if(game.Gametime.ElapsedTime._eventQueue.array[i]._args[1]==searchID){
+						match=true;
+						break;
+					}
+				}
+			}
+			if(!match){
+				let newDuration = j.data.flags.spellTemplateManager.duration * game.settings.get("about-time", "seconds-per-round");
+				console.debug("Spell Template Manager | Creating Notify Event for template ", j.id, " in ", newDuration, " seconds."); 
+				game.Gametime.notifyIn({seconds: newDuration},"spellTemplateManager",j.id);
+			
+			}
+		})});
 	}	
 
 }
@@ -521,9 +553,11 @@ function registerSpellTemplateManagerSettings(){
 				"claim": game.i18n.localize("spellTemplateManager.unmanagedTemplateAction.claim")
 			},
 			default: "prompt",
-			onChange: value => console.log(value)
+			onChange: value => {spellTemplateManager.unmanagedTemplateAction = value;}
 		}
 	);
+	spellTemplateManager.unmanagedTemplateAction = game.settings.get("spellTemplateManager","unmanagedTemplateAction");
+
 	game.settings.register(
 		"spellTemplateManager", "instantaneousSpellFade", {
 			name: game.i18n.localize("spellTemplateManager.instantaneousSpellFade.name"),
@@ -537,37 +571,63 @@ function registerSpellTemplateManagerSettings(){
 				step: 1
 			},
 			default: 0,
-			onChange: value => console.log(value)
+			onChange: value => {spellTemplateManager.instantaneousSpellFade = value;}
 		}
 	);
-       game.settings.register(
-		"spellTemplateManager","worldConcentration", {
-                    name: game.i18n.localize("spellTemplateManager.worldConcentration.name"),
-                    hint: game.i18n.localize("spellTemplateManager.worldConcentration.hint"),
-                    type: Boolean,
-                    default: true,
-                    config: true,
-                    scope: "world",
-                    onChange: value => console.log(value)
-                }
-      );
-       game.settings.register(
-		"spellTemplateManager","usingAT", {
-                    name: "Using About Time",
-                    hint: "Checking this box will disable STM processing and offload to the About Time module.",
-                    type: Boolean,
-                    default: false,
-                    config: true,
-                    scope: "world",
-                    onChange: value => console.log(value)
-                }
-      );
+	spellTemplateManager.instantaneousSpellFade = game.settings.get("spellTemplateManager","instantaneousSpellFade");
 
+	game.settings.register(
+		"spellTemplateManager","enforceConcentration", {
+			name: game.i18n.localize("spellTemplateManager.enforceConcentration.name"),
+			hint: game.i18n.localize("spellTemplateManager.enforceConcentration.hint"),
+			type: Boolean,
+			default: true,
+			config: true,
+			scope: "world",
+			onChange: value => {spellTemplateManager.enforceConcentration = value;}
+		}
+	);
+	spellTemplateManager.enforceConcentration = game.settings.get("spellTemplateManager","enforceConcentration");
+
+	game.settings.register(
+		"spellTemplateManager","worldConcentration", {
+               		name: game.i18n.localize("spellTemplateManager.worldConcentration.name"),
+			hint: game.i18n.localize("spellTemplateManager.worldConcentration.hint"),
+                    	type: Boolean,
+                    	default: true,
+                    	config: true,
+        	       	scope: "world",
+	              	onChange: value => {spellTemplateManager.worldConcentration = value;}
+        	}
+	);
+	spellTemplateManager.worldConcentration = game.settings.get("spellTemplateManager","worldConcentration");
+
+	let ATInstalled = false;
+	let ATEnabled = false;
+	try{ ATInstalled = !(game.modules.get("about-time") == undefined); }catch{}
+	try{ ATEnabled = game.modules.get("about-time").active; }catch{}
+	game.settings.register(
+		"spellTemplateManager","usingAT", {
+               		name: game.i18n.localize("spellTemplateManager.usingAT.name"),
+			hint: game.i18n.localize("spellTemplateManager.usingAT.hint"),
+	               	type: Boolean,
+	               	default: true,
+	               	config: (ATInstalled && ATEnabled),
+	               	scope: "world",
+	               	onChange: value => {
+				spellTemplateManager.usingAT = value;
+				if(value){
+					spellTemplateManager.createATEvents();
+				}
+			}
+        	}
+	);
+	spellTemplateManager.usingAT = (ATInstalled && ATEnabled && game.settings.get("spellTemplateManager","usingAT"));	
 }
 
 
 Hooks.once("init", () => {
-    registerSpellTemplateManagerSettings();
+	registerSpellTemplateManagerSettings();
 });
 
 Hooks.once('ready', () => {
@@ -693,7 +753,7 @@ Hooks.on("updateCombat", (Combat,Round,Diff,User) => {
 });
 
 Hooks.on("about-time.eventTrigger", (...args) => {
-	if(args[0] == "spellTemplateManager"){
+	if(args[0] == "spellTemplateManager" && spellTemplateManager.usingAT){
 		spellTemplateManager.deleteTemplate(args[1]);
 	}
 });
