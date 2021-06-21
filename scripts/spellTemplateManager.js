@@ -1396,7 +1396,7 @@ Hooks.on("hoverMeasuredTemplate",e=>{
 		if(spellTemplateManager.currentTT == undefined){
 			spellTemplateManager.currentTT = document.createElement("DIV");
 		}
-		spellTemplateManager.currentTT.innerHTML = '<table><tr style="font-weight:bold;font-size:115%"><td>'+ttplayer+'</td></tr><tr style="font-weight:500"><td>'+ttspell+'</td></tr><tr><td>'+ttduration+'</</td></tr></table>';
+		spellTemplateManager.currentTT.innerHTML = '<table style="border:0px;padding:0px;margin:0px;border-collapse: collapse;"><tr style="font-weight:bold;font-size:115%"><td>'+ttplayer+'</td></tr><tr style="font-weight:500"><td>'+ttspell+'</td></tr><tr><td>'+ttduration+'</</td></tr></table>';
 		spellTemplateManager.currentTT.setAttribute("id", "spell-template-manager-tooltip");
 		spellTemplateManager.currentTT.style.position = "absolute";
 		spellTemplateManager.currentTT.style.borderColor = "black";
