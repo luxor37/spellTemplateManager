@@ -30,7 +30,7 @@ Spell Template Manager adds a tooltip to the Measured Template tools.  Simply se
 
 ## About Time Compatibility
 
-Spell Template Manager fully supports real-time template expiration through use of the **About Time module**.  When this module is installed, a new setting is available in the Foundry settings panel, that will allow you to offload processing to the About Time module.  This is the suggested configuration.  
+Spell Template Manager fully supports real-time template expiration through use of the **About Time** module.  When this module is installed, a new setting is available in the Foundry settings panel, that will allow you to offload processing to the About Time module.  This is the suggested configuration.  
 
 ## Requirements
 
