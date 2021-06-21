@@ -2,7 +2,7 @@
     "githubIssues.queries": [
 
         {
-            "label": "My Issues",
+            "label": "All Issues",
             "query": "default"
         },
         {
