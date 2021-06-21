@@ -1,10 +1,13 @@
 class spellTemplateManager {
+	static running = false;
+	static currentSystem = undefined;
 	static currentItem = undefined;
 	static currentActor = undefined;
 	static currentPlayer = undefined;
 	static currentDurationRounds = undefined;
 	static currentScene = undefined;
 	static inPUC = false;
+	static ApplyTextureComplete = true;
 	static capture = undefined;
 	static currentException = undefined;
 	static usingAT = false;
@@ -12,6 +15,13 @@ class spellTemplateManager {
 	static worldConcentration = true;
 	static instantaneousSpellFade = 0;
 	static unmanagedTemplateAction = "prompt";
+	static currentTT = undefined;
+	static currentSpell = undefined
+	static textureMap = new Map();
+	static initialized = false;
+
+	
+	
 
 	static resetItemData(){
 		spellTemplateManager.currentItem = undefined;
@@ -20,41 +30,63 @@ class spellTemplateManager {
 		spellTemplateManager.currentDurationRounds = undefined;
 		spellTemplateManager.currentScene = undefined;
 		spellTemplateManager.currentException = undefined;
+		spellTemplateManager.currentSpell = undefined;
 	}
+
+	static getSourceTemplate(id){
+		let templateI = undefined
+		game.scenes.forEach( i => {
+			let templateJ = undefined;
+			i.templates.forEach(j => {
+				if(id == j.id){
+					templateJ = j;
+				}
+			});
+			if(templateJ != undefined){
+				templateI = templateJ;
+			}
+		});
+		return templateI;		
+	}
+
+
 
 	static getDuration(){
 		let value = spellTemplateManager.currentItem.data.data.duration.value
 		let units = spellTemplateManager.currentItem.data.data.duration.units
-		switch(units) {
-			case "day":
-				spellTemplateManager.currentDurationRounds = value * 10 * 60 * 24;
-				break;
-			case "hour":
-				spellTemplateManager.currentDurationRounds = value * 10 * 60;
-				break;
-			case "inst":
-				spellTemplateManager.currentDurationRounds = 0 + spellTemplateManager.instantaneousSpellFade;
-				break;
-			case "minute":
-			case "minutes":
-				spellTemplateManager.currentDurationRounds = value * 10;
-				break;
-			case "round":
-				spellTemplateManager.currentDurationRounds = value;
-				break;
-			case "spec":
-			case "unti":
-				spellTemplateManager.currentDurationRounds = -1;
-				break;
-			default:
-				spellTemplateManager.currentDurationRounds = -1;
+		if(!(spellTemplateManager.currentException == "checked")){
+			switch(units) {
+				case "day":
+					spellTemplateManager.currentDurationRounds = value * 10 * 60 * 24;
+					break;
+				case "hour":
+					spellTemplateManager.currentDurationRounds = value * 10 * 60;
+					break;
+				case "inst":
+					spellTemplateManager.currentDurationRounds = spellTemplateManager.instantaneousSpellFade;
+					break;
+				case "minute":
+				case "minutes":
+					spellTemplateManager.currentDurationRounds = value * 10;
+					break;
+				case "round":
+					spellTemplateManager.currentDurationRounds = value;
+					break;
+				case "spec":
+				case "unti":
+					spellTemplateManager.currentDurationRounds = -1;
+					break;
+				default:
+					spellTemplateManager.currentDurationRounds = -1;
+			}
+		}else{
+			spellTemplateManager.currentDuration=spellTemplateManager.instantaneousSpellFade;
 		}
 		console.debug("Spell Template Manager | Spell duration in rounds is ", spellTemplateManager.currentDurationRounds);
 	}
 
 	static getData (dialog, html){
 		console.log("Spell Template Manager | Collecting Item Data");
-		console.log(dialog);
 		spellTemplateManager.currentItem = undefined;
 		spellTemplateManager.currentActor = undefined;
 		spellTemplateManager.currentPlayer = undefined;
@@ -63,6 +95,7 @@ class spellTemplateManager {
 		spellTemplateManager.currentActor=dialog.item.actor;
 		spellTemplateManager.currentScene=game.scenes.viewed.id;
 		spellTemplateManager.currentPlayer=game.userId;
+		spellTemplateManager.currentSpell=spellTemplateManager.currentItem.name;
 		if(dialog.item.data.flags.spellTemplateManager != undefined){
 			spellTemplateManager.currentException=dialog.item.data.flags.spellTemplateManager["ignore-duration"];
 		}else{
@@ -76,10 +109,8 @@ class spellTemplateManager {
 		let scenes = game.scenes;
 		scenes.forEach(scene => {
 
-			console.debug(scene.name);
 			let templates = undefined;
 			templates = scene.data.templates;
-			console.debug("Final deletions: ",templates);
 			if(templates !== undefined) {
 				let deletions = templates.map(i => i.id);
 				let updated = scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);					
@@ -90,8 +121,328 @@ class spellTemplateManager {
 			
 	}
 
+	static getPlaceableTemplate(templateID){
+		let placeable = undefined;
+		for(let i = game.canvas.templates.placeables.length -1; i > -1; i--){
+			if (game.canvas.templates.placeables[i].data.flags.spellTemplateManager?.item == templateID || game.canvas.templates.placeables[i].data._id == templateID){
+				placeable = game.canvas.templates.placeables[i];
+				return placeable;
+			}
+		}		
+		return placeable;
+	}
+
+	static async applyTexture(args,mysi){
+		if(args[0].data.flags.spellTemplateManager != undefined){
+			let placeable = spellTemplateManager.getPlaceableTemplate(args[0].data.flags.spellTemplateManager.item);
+			if(placeable != undefined){
+				spellTemplateManager.ApplyTextureComplete = true;
+				try{
+					clearInterval(mysi);
+				}catch{}
+				let scale = 1;
+				
+				let originalActor = game.actors.get(args[0].data.flags.spellTemplateManager?.actor);
+				let originalSpellTexture = undefined;
+				let useTexture = undefined;
+				let alpha = 50;
+
+
+					let originalToken = game.scenes.active.tokens.filter(i=>{return (i.actor.id==(args[0].data?.flags?.spellTemplateManager?.actor))})[0];
+					let itemArray = (originalToken?.data.actorData.items??undefined);
+					let foundSpell = undefined;
+					if(itemArray != undefined){
+						for (let i = 0; i < itemArray.length; i++){
+							if(itemArray[i]._id == args[0].data.flags.spellTemplateManager.item){
+								foundSpell = itemArray[i];
+								break;
+							}
+						}
+					}
+					originalSpellTexture = foundSpell?.flags?.spellTemplateManager?.texture;
+					originalSpellTexture = originalSpellTexture??originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.texture;
+
+					useTexture = foundSpell?.flags?.spellTemplateManager?.useTexture;
+					useTexture = useTexture ?? originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.useTexture;
+
+					alpha = foundSpell?.flags?.spellTemplateManager?.alpha;
+					alpha = (alpha??originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.alpha)??50;
+
+
+
+
+				placeable.setFlag("spellTemplateManager","spellTexture",originalSpellTexture);
+				await placeable.setFlag("spellTemplateManager","useTexture",useTexture);
+				placeable.setFlag("spellTemplateManager","alpha",alpha);
+
+						
+				if(("" != (useTexture??"")) && "" != (originalSpellTexture??"")){
+	
+					let STMtexture = spellTemplateManager.textureMap.get(originalSpellTexture);	
+					let textureSize = undefined;
+					let sprite = undefined;
+					let masker = undefined;
+					let icon = undefined;
+					let xPos = undefined;
+					let yPos = undefined;
+					let mask = undefined;
+					let source = undefined;
+					let workingWidth = undefined;
+					switch(placeable.data.t){
+						case "circle":
+		        				if(STMtexture == undefined){
+								STMtexture = await loadTexture(originalSpellTexture);
+								textureSize = placeable.height;
+								STMtexture.orig = { height: (textureSize * scale), width: textureSize * scale, x: -textureSize, y: -textureSize };
+								spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+							}
+							sprite = new PIXI.Sprite(STMtexture);
+							sprite.anchor.set(0.5);
+							sprite.alpha = alpha/100
+							icon = await placeable.addChild(sprite);
+							source = getProperty(icon._texture, "baseTexture.resource.source");
+							if (source && (source.tagName === "VIDEO")) {
+								source.loop = true;
+								source.muted = true;
+								game.video.play(source);
+							}
+							icon.zIndex = -1000;
+							masker = new PIXI.Graphics();
+							masker.beginFill(0xFF0000, 1);
+							masker.lineStyle(0);
+							masker.drawCircle(0, 0, placeable.ray.distance);
+				        		masker.endFill();
+							masker.zIndex = -1000;
+							mask = await placeable.addChild(masker);
+							sprite.mask=masker;
+							break;
+						case "cone":
+		        				if(STMtexture == undefined){
+								STMtexture = await loadTexture(originalSpellTexture);
+								spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+							}
+							workingWidth =  placeable.ray._distance;
+							sprite = new PIXI.Sprite(STMtexture)
+							sprite.anchor.set(0,0.5)
+							sprite.width=workingWidth;
+							sprite.height=Math.sqrt((workingWidth**2)+(workingWidth**2));
+							sprite.alpha = alpha/100;
+							sprite.angle = placeable.data.direction;
+							icon = await placeable.addChild(sprite)
+							source = getProperty(icon._texture, "baseTexture.resource.source");
+							if (source && (source.tagName === "VIDEO")) {
+								source.loop = true;
+								source.muted = true;
+								game.video.play(source);
+							}
+							icon.zIndex = -1000;
+							masker = new PIXI.Graphics();
+							masker.beginFill(0x00FF00);
+							masker.lineStyle(1, 0xFFFF00);
+							masker.moveTo(0, 0);
+							masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
+							masker.lineTo(0, 0);
+							masker.endFill();
+							masker.zIndex = -1000;
+							placeable.addChild(masker);
+							sprite.mask=masker;
+							break;
+						case "rect":
+							if(STMtexture == undefined){
+								STMtexture = await loadTexture(originalSpellTexture);
+								spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+							}
+							workingWidth =  placeable.ray._distance;
+							sprite = new PIXI.Sprite(STMtexture)
+							sprite.anchor.set(0,0)
+							sprite.width=Math.floor((placeable.shape.width)/35)*35;
+							sprite.height=Math.floor((placeable.shape.height)/35)*35;
+							sprite.alpha = alpha/100;
+							icon = await placeable.addChild(sprite)
+							await icon.position.set(
+								(placeable.shape.left == 0)?0:(-sprite.width),
+								(placeable.shape.top == 0)?0:(-sprite.height)
+							)
+							source = getProperty(icon._texture, "baseTexture.resource.source");
+							if (source && (source.tagName === "VIDEO")) {
+								source.loop = true;
+								source.muted = true;
+								game.video.play(source);
+							}
+							icon.zIndex = -1000;
+							break;
+						default:
+							if(STMtexture == undefined){
+								STMtexture = await loadTexture(originalSpellTexture);
+								spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+							}
+							sprite = new PIXI.Sprite(STMtexture)
+							sprite.height=placeable.data.width*game.canvas.grid.size/5;
+							sprite.width=placeable.data.distance*game.canvas.grid.size/5;
+							sprite.y=0;
+							sprite.anchor.set(0,0.5);
+							sprite.rotation=placeable.ray.normAngle;
+							sprite.alpha = alpha/100;
+							icon = await placeable.addChild(sprite)
+							source = getProperty(icon._texture, "baseTexture.resource.source");
+							if (source && (source.tagName === "VIDEO")) {
+								source.loop = true;
+								source.muted = true;
+								game.video.play(source);
+							}
+							icon.zIndex = -1000;
+							
+							break;
+
+					}
+				}
+			}
+		}
+	}
+
+
+	static async reapplyTexture(placeable){
+		placeable.sortDirty=true;
+		placeable.sortChildren();
+		let child = placeable.children[0];
+		while(child.zIndex == -1000){
+			placeable.removeChild(child);
+			child = placeable.children[0];
+		}
+		let scale = 1;
+		let originalSpellTexture = placeable.document.getFlag("spellTemplateManager","spellTexture");
+		let alpha = placeable.getFlag("spellTemplateManager","alpha");
+		let useTexture = placeable.getFlag("spellTemplateManager","useTexture");
+		if(("" != (useTexture??"")) && "" != (originalSpellTexture??"")){
+
+			let STMtexture = spellTemplateManager.textureMap.get(originalSpellTexture);	
+			let textureSize = undefined;
+			let sprite = undefined;
+			let masker = undefined;
+			let icon = undefined;
+			let xPos = undefined;
+			let yPos = undefined;
+			let mask = undefined;
+			let source = undefined;
+			let workingWidth = undefined;
+			switch(placeable.data.t){
+				case "circle":
+		        		if(STMtexture == undefined){
+						STMtexture = await loadTexture(originalSpellTexture);
+						textureSize = placeable.height;
+						STMtexture.orig = { height: (textureSize * scale), width: textureSize * scale, x: -textureSize, y: -textureSize };
+						spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+					}
+					sprite = new PIXI.Sprite(STMtexture);
+					sprite.anchor.set(0.5);
+					sprite.alpha = alpha/100
+					icon = await placeable.addChild(sprite);
+					source = getProperty(icon._texture, "baseTexture.resource.source");
+					if (source && (source.tagName === "VIDEO")) {
+						source.loop = true;
+						source.muted = true;
+						game.video.play(source);
+					}
+					icon.zIndex = -1000;
+					masker = new PIXI.Graphics();
+					masker.beginFill(0xFF0000, 1);
+					masker.lineStyle(0);
+					masker.drawCircle(0, 0, placeable.ray.distance);
+		        		masker.endFill();
+					masker.zIndex = -1000;
+					mask = await placeable.addChild(masker);
+					sprite.mask=masker;
+					break;
+				case "cone":
+		        		if(STMtexture == undefined){
+						STMtexture = await loadTexture(originalSpellTexture);
+						spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+					}
+					workingWidth =  placeable.ray._distance;
+					textureSize = placeable.data.height * canvas.grid.size;
+					sprite = new PIXI.Sprite(STMtexture)
+					sprite.anchor.set(0,0.5)
+					sprite.width=workingWidth;
+					sprite.height=Math.sqrt((workingWidth**2)+(workingWidth**2));
+					sprite.alpha = alpha/100;
+					sprite.angle = placeable.data.direction;
+					icon = await placeable.addChild(sprite)
+					source = getProperty(icon._texture, "baseTexture.resource.source");
+					if (source && (source.tagName === "VIDEO")) {
+						source.loop = true;
+						source.muted = true;
+						game.video.play(source);
+					}
+					icon.zIndex = -1000;
+					masker = new PIXI.Graphics();
+					masker.beginFill(0x00FF00);
+					masker.lineStyle(1, 0xFFFF00);
+					masker.moveTo(0, 0);
+					masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
+					masker.lineTo(0, 0);
+					masker.endFill();
+					masker.zIndex = -1000;
+					placeable.addChild(masker);
+					sprite.mask=masker;
+					break;
+				case "rect":
+		        		if(STMtexture == undefined){
+						STMtexture = await loadTexture(originalSpellTexture);
+						spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+					}
+					workingWidth =  placeable.ray._distance;
+					sprite = new PIXI.Sprite(STMtexture)
+					sprite.anchor.set(0,0)
+					sprite.width=Math.floor((placeable.shape.width)/35)*35;
+					sprite.height=Math.floor((placeable.shape.height)/35)*35;
+					sprite.alpha = alpha/100;
+					icon = await placeable.addChild(sprite)
+					await icon.position.set(
+						(placeable.shape.left == 0)?0:(-sprite.width),
+						(placeable.shape.top == 0)?0:(-sprite.height)
+					)
+					source = getProperty(icon._texture, "baseTexture.resource.source");
+					if (source && (source.tagName === "VIDEO")) {
+						source.loop = true;
+						source.muted = true;
+						game.video.play(source);
+					}
+					icon.zIndex = -1000;
+					break;
+				default:
+					if(STMtexture == undefined){
+						STMtexture = await loadTexture(originalSpellTexture);
+						spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+					}
+					sprite = new PIXI.Sprite(STMtexture)
+					sprite.height=placeable.data.width*game.canvas.grid.size/5;
+					sprite.width=placeable.data.distance*game.canvas.grid.size/5;
+					sprite.y=0;
+					sprite.anchor.set(0,0.5);
+					sprite.rotation=placeable.ray.normAngle;
+					sprite.alpha = alpha/100;
+					icon = await placeable.addChild(sprite);
+					source = getProperty(icon._texture, "baseTexture.resource.source");
+					if (source && (source.tagName === "VIDEO")) {
+						source.loop = true;
+						source.muted = true;
+						game.video.play(source);
+					}
+					icon.zIndex = -1000;
+					break;
+
+			}
+		}
+	}
+
+
+
+
+
+
+
 	static updateTemplate(scene,template,ignoreDuration,isConcentration,isSpecialSpell,index){
-		console.log("UPDATE TEMPLATE");
+		console.log("Spell Template Manager | Updating Template");
 		let done = false;
 		if(index < 10 && !done){
 			if(scene.data.templates.filter(i => i.id === template.id).length > 0){
@@ -102,9 +453,12 @@ class spellTemplateManager {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
-							duration: (ignoreDuration?0:spellTemplateManager.currentDurationRounds),
+							duration: spellTemplateManager.currentDurationRounds,
 							special: (isSpecialSpell),
-							scene: scene.id
+							scene: scene.id,
+							bd: spellTemplateManager.usingAT?game.Gametime.ElapsedTime.currentTimeSeconds():undefined,
+							spell: spellTemplateManager.currentSpell,
+							item: spellTemplateManager.currentItem.id
 						}
 					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'concentrationTemplateColor')).substring(1,7))};
 				}else if(spellTemplateManager.currentDurationRounds>0){
@@ -112,19 +466,25 @@ class spellTemplateManager {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
-							duration: (ignoreDuration?0:spellTemplateManager.currentDurationRounds),
+							duration: spellTemplateManager.currentDurationRounds,
 							special: (isSpecialSpell),
-							scene: spellTemplateManager.currentScene
+							scene: spellTemplateManager.currentScene,
+							bd: spellTemplateManager.usingAT?game.Gametime.ElapsedTime.currentTimeSeconds():undefined,
+							spell: spellTemplateManager.currentSpell,
+							item: spellTemplateManager.currentItem.id
 						}
 					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'enduringTemplateColor')).substring(1,7))};
-				}else if(spellTemplateManager.currentDurationRounds<0){
+				}else if(isSpecialSpell){
 					update = {_id: template.id, flags: {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
-							duration: (ignoreDuration?0:spellTemplateManager.currentDurationRounds),
+							duration: spellTemplateManager.currentDurationRounds,
 							special: (isSpecialSpell),
-							scene: spellTemplateManager.currentScene
+							scene: spellTemplateManager.currentScene,
+							bd: spellTemplateManager.usingAT?game.Gametime.ElapsedTime.currentTimeSeconds():undefined,
+							spell: spellTemplateManager.currentSpell,
+							item: spellTemplateManager.currentItem.id
 						}
 					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'specialTemplateColor')).substring(1,7))};
 				}else{
@@ -132,23 +492,28 @@ class spellTemplateManager {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
 							actor:spellTemplateManager.currentActor.data._id, 
-							duration: (ignoreDuration?0:spellTemplateManager.currentDurationRounds),
+							duration: spellTemplateManager.currentDurationRounds,
 							special: (isSpecialSpell),
-							scene: spellTemplateManager.currentScene
+							scene: spellTemplateManager.currentScene,
+							bd: spellTemplateManager.usingAT?game.Gametime.ElapsedTime.currentTimeSeconds():undefined,
+							spell: spellTemplateManager.currentSpell,
+							item: spellTemplateManager.currentItem.id
 						}
 					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'standardTemplateColor')).substring(1,7))};
 				}
 				let updated = scene.updateEmbeddedDocuments("MeasuredTemplate", [update]);
 
 				if(game.settings.get('spellTemplateManager','usingAT')){
-					let roundSeconds = game.settings.get("about-time", "seconds-per-round");					
-					game.Gametime.notifyIn({seconds: ignoreDuration?6:spellTemplateManager.currentDurationRounds*roundSeconds},"spellTemplateManager",template.id);
+					let roundSeconds = game.settings.get("about-time", "seconds-per-round");	
+					let notifyTime = ignoreDuration?(spellTemplateManager.instantaneousSpellFade*roundSeconds):spellTemplateManager.currentDurationRounds*roundSeconds;
+					console.log("Creating template timeout in ",notifyTime);	
+					game.Gametime.notifyIn({seconds: notifyTime},"spellTemplateManager",template.id);
 				}
 				spellTemplateManager.resetItemData();  
 				done = true;
 			}else{
 				console.debug("Spell Template Manager | Failed to update template.  Retrying. ", index);
-				setTimeout(spellTemplateManager.updateTemplate(scene,template,ignoreDuration,isConcentration,isSpecialSpell,index+1), 1000);
+				setTimeout(spellTemplateManager.updateTemplate(scene,template,ignoreDuration,isConcentration,isSpecialSpell,index+1), 100);
 			}
 		}else{
 			console.log("Spell Template Manager | Failed to update template.");
@@ -161,16 +526,24 @@ class spellTemplateManager {
 	static async deleteTemplate(templateId){
 		console.log("Spell Template Manager | Deleting Template: ", templateId);
 		game.scenes.forEach(scene => {
-			let templates = scene.data.templates.filter(i => i.id == templateId);
-			let deletions = templates.map(i => i.id);
-			let updated = scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);
+			if(game.user.isGM){
+				setTimeout( () => {
+					let templates = scene.data.templates.filter(i => (i.id == templateId && game.userId == i.author.id));
+					let deletions = templates.map(i => i.id);
+					let updated = scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);
+				},500);
+			}else{
+				let templates = scene.data.templates.filter(i => (i.id == templateId && game.userId == i.author.id));
+				let deletions = templates.map(i => i.id);
+				let updated = scene.deleteEmbeddedDocuments("MeasuredTemplate",deletions);
+			}
 		});
 	}
 
 	static async evaluateTemplate(template,data,userID){
 		console.log("Spell Template Manager | Evaluating template");
 		if(spellTemplateManager.currentItem !== undefined){
-			let isConcentration = spellTemplateManager.currentItem.data.data.components?spellTemplateManager.currentItem.data.data.components?.concentration:false;
+			let isConcentration = ((spellTemplateManager.currentSystem=="dnd5e")?(spellTemplateManager.currentItem.data.data.components?spellTemplateManager.currentItem.data.data.components?.concentration:false):false);
 			let isSpecial = (spellTemplateManager.currentItem.data.data.duration.units === "unti" || spellTemplateManager.currentItem.data.data.duration.units === "spec");
 			let ignoreDuration = (spellTemplateManager.currentException == "checked" ? true : false);
 			if(isConcentration && spellTemplateManager.enforceConcentration){
@@ -186,16 +559,7 @@ class spellTemplateManager {
 					console.debug(filtertemplates);
 					console.debug("Filtering for concentration");
 					filtertemplates = filtertemplates.filter(i => {
-							scene = i.parent;
-							if(i.data.flags.spellTemplateManager !== undefined){
-								//try{
-									return ((spellTemplateManager.currentActor.data._id === i.data.flags.spellTemplateManager.actor) && (i.id !== template.id) && (i.data.user === game.userId) && (i.data.flags.spellTemplateManager.concentration === true) && (scene.id == i.data.flags.spellTemplateManager.scene));
-								//}catch{
-								//	console.log(i);
-								//}
-							}else{
-								return false;
-							}					
+							scene = i.parent;					
 						}
 					);
 					console.debug("Final deletions: ",filtertemplates);
@@ -222,7 +586,7 @@ class spellTemplateManager {
 				
 				return (
 					(i.data.flags.spellTemplateManager.actor === Combat.combatant.actor.id || i.data.flags.spellTemplateManager.actor === undefined) && 
-					(i.data.flags.spellTemplateManager.duration <= 0 || i.data.flags.spellTemplateManager.duration === undefined) &&
+					(i.data.flags.spellTemplateManager.duration < 1 || i.data.flags.spellTemplateManager.duration === undefined) &&
 					(!i.data.flags.spellTemplateManager.special || i.data.flags.spellTemplateManager.special === undefined)
 				);
 			}
@@ -476,6 +840,16 @@ class spellTemplateManager {
 		game.scenes.forEach(i => {i.data.templates.forEach(j => {
 			
 
+			let update = {};
+			update = {_id: j.id, flags: {
+					"spellTemplateManager":{
+						bd: game.Gametime.ElapsedTime.currentTimeSeconds()
+					}
+				}
+			};
+			let updated = i.updateEmbeddedDocuments("MeasuredTemplate", [update]);
+
+
 			let searchID = j.id;
 			let match = false;
 			for(let i = 0; i < game.Gametime.ElapsedTime._eventQueue.array.length; i++){
@@ -487,14 +861,134 @@ class spellTemplateManager {
 				}
 			}
 			if(!match){
-				let newDuration = j.data.flags.spellTemplateManager.duration * game.settings.get("about-time", "seconds-per-round");
-				console.debug("Spell Template Manager | Creating Notify Event for template ", j.id, " in ", newDuration, " seconds."); 
-				game.Gametime.notifyIn({seconds: newDuration},"spellTemplateManager",j.id);
-			
+				try{
+					let newDuration = j.data.flags.spellTemplateManager.duration * game.settings.get("about-time", "seconds-per-round");
+					console.debug("Spell Template Manager | Creating Notify Event for template ", j.id, " in ", newDuration, " seconds."); 
+					game.Gametime.notifyIn({seconds: newDuration},"spellTemplateManager",j.id);
+				}catch{
+					console.debug("Spell Template Manager | Could not create notify event for template ", j.id);
+				}			
 			}
 		})});
-	}	
+	}
 
+	static parseChatMessage2(args){
+		if(spellTemplateManager.running){
+			spellTemplateManager.currentPlayer = game.userId;
+			let mmessage = args[0];
+			let mcard = args[1];
+			let mcontent = mcard.content;
+			let duration = 0;
+			let units = "";
+			let value=0;
+			let mitem = undefined;
+			let mscene = undefined
+			let itemIndex=mcontent.indexOf('data-item-id=');
+			let actorIndex=mcontent.indexOf('data-actor-id=');
+			let sceneIndex=mcontent.indexOf('data-token-id=');
+			let valid = true;
+			let mtoken = undefined;
+			let itemID = undefined;
+
+				let actorID = mcard.speaker?.actor ?? mcontent.substring(actorIndex+15,actorIndex+15+16);
+				spellTemplateManager.currentActor = game.actors.get(actorID);
+				spellTemplateManager.currentScene = ((sceneIndex > -1)?mcontent.substring(sceneIndex+15,sceneIndex+15+16):game.scenes.viewed._id);
+				mtoken = ((sceneIndex > -1)?game.scenes.get(spellTemplateManager.currentScene).data.tokens.get(mcontent.substring(sceneIndex+15+16+1,sceneIndex+15+16+1+16)):game.scenes.get(spellTemplateManager.currentScene).data.tokens.get(mcard.speaker.token));
+
+				switch(mtoken.isLinked || (!mtoken.isLinked && sceneIndex == -1 )){
+					case true:
+						itemID = mcontent.substring(itemIndex+14,itemIndex+14+16);
+						spellTemplateManager.currentItem = spellTemplateManager.currentActor.data.items.get(itemID);
+						break;
+					case false:
+						itemID = mcontent.substring(itemIndex+14,itemIndex+14+16);
+						spellTemplateManager.currentItem = {
+							id:itemID,
+							data:mtoken.data.actorData.items.find(element => element._id == itemID),
+							type:mtoken.data.actorData.items.find(element => element._id == itemID).type
+						};
+						break;
+				}
+			spellTemplateManager.currentSpell = spellTemplateManager.currentItem.name;
+			if(spellTemplateManager.currentItem.type == "spell"){
+				console.log("Spell Template Manager | Checking for duration");
+				if(spellTemplateManager.currentItem.data.data.duration?.value=="" || spellTemplateManager.currentItem.data.data.duration?.value==undefined){
+					duration  = spellTemplateManager.instantaneousSpellFade;
+				}else{
+					let durationArray = spellTemplateManager.currentItem.data.data.duration.value.toLowerCase().split(" ");
+					if(durationArray.length > 1){
+						value = durationArray[durationArray.length-2];
+						units = durationArray[durationArray.length-1];
+					}else{
+						value = 1;
+						units = durationArray[0];
+					}
+					if(value == "next") value = 1;	
+					if(value == "current") value = 0;
+					if(String(value).indexOf("d")>-1) value = value.substring(value.indexOf("d")+1,value.length);					
+					switch(units) {
+						case "year":
+						case "years":
+							duration = value * 10 * 60 * 24 * 365;
+							break;
+						case "week":
+						case "weeks":
+							duration = value * 10 * 60 * 24 * 7;
+							break;
+						case "day":
+						case "days":
+							duration = value * 10 * 60 * 24;
+							break;
+						case "hour":
+						case "hours":
+							duration  = value * 10 * 60;
+							break;
+						case "inst":
+						case "":
+							duration  = spellTemplateManager.instantaneousSpellFade;
+							break;
+						case "minute":
+						case "minutes":
+						case "minue":
+							duration  = value * 10;
+							break;
+						case "round":
+						case "rounds":
+						case "turn":
+						case "turns":
+							duration  = value;
+							break;
+						case "spec":
+						case "unti":
+						case "until":
+						case "varies":
+						case "sustained":
+						case "unlimited":
+						case "preparations":
+						case "text":
+						case "below)":
+						case "longer)":
+						case "stance":
+						case "dismissed":
+							duration  = -1;
+							break;
+						default:
+							duration = -1;
+					}
+				}
+				if(spellTemplateManager.currentItem.data.flags.spellTemplateManager === undefined){
+					spellTemplateManager.currentException = "";
+				}else{
+					spellTemplateManager.currentException = (spellTemplateManager.currentItem.data.flags.spellTemplateManager["ignore-duration"]??"");					
+				}
+				spellTemplateManager.currentDurationRounds = (spellTemplateManager.currentException=="checked"?0:duration);
+			}else{
+				console.debug("Spell Template Manager | Ignoring chat message");
+			}
+		}else{
+			console.debug("Spell Template Manager | Not ready");
+		}
+	}
 }
 
 function registerSpellTemplateManagerSettings(){
@@ -509,16 +1003,34 @@ function registerSpellTemplateManagerSettings(){
 		onChange: (value) => { spellTemplateManager.resetTemplateBorders();}
 	});
 
-	new window.Ardittristan.ColorSetting("spellTemplateManager", "concentrationTemplateColor", {
-		name: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.name"),
-		hint: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.hint"),
-		label: "Click to select color",
-		restricted: true,
-		defaultColor: "#ffff00ff",
-		scope: "world",
-		onChange: (value) => { spellTemplateManager.resetTemplateBorders();}
-	});
+	switch(spellTemplateManager.currentSystem){
+		case "dnd5e":
+			new window.Ardittristan.ColorSetting("spellTemplateManager", "concentrationTemplateColor", {
+				name: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.name"),
+				hint: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.hint"),
+				label: "Click to select color",
+				restricted: true,
+				defaultColor: "#ffff00ff",
+				scope: "world",
+				onChange: (value) => { spellTemplateManager.resetTemplateBorders();}
+			});
+			break;
+		default:
 
+			game.settings.register(
+				"spellTemplateManager", "concentrationTemplateColor", {
+					name: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.name"),
+					hint: game.i18n.localize("spellTemplateManager.concentrationTemplateColor.hint"),
+					scope: "world",
+					config: false,
+					type: String,
+					default: "#ffff00ff",
+					onChange: value => {spellTemplateManager.resetTemplateBorders();}
+				}
+			);
+			break;
+			
+	}
 	new window.Ardittristan.ColorSetting("spellTemplateManager", "enduringTemplateColor", {
 		name: game.i18n.localize("spellTemplateManager.enduringTemplateColor.name"),
 		hint: game.i18n.localize("spellTemplateManager.enduringTemplateColor.hint"),
@@ -581,8 +1093,8 @@ function registerSpellTemplateManagerSettings(){
 			name: game.i18n.localize("spellTemplateManager.enforceConcentration.name"),
 			hint: game.i18n.localize("spellTemplateManager.enforceConcentration.hint"),
 			type: Boolean,
-			default: true,
-			config: true,
+			default: (spellTemplateManager.currentSystem != "pf2e"),
+			config: (spellTemplateManager.currentSystem == "dnd5e"),
 			scope: "world",
 			onChange: value => {spellTemplateManager.enforceConcentration = value;}
 		}
@@ -594,8 +1106,8 @@ function registerSpellTemplateManagerSettings(){
                		name: game.i18n.localize("spellTemplateManager.worldConcentration.name"),
 			hint: game.i18n.localize("spellTemplateManager.worldConcentration.hint"),
                     	type: Boolean,
-                    	default: true,
-                    	config: true,
+                    	default: (spellTemplateManager.currentSystem != "pf2e"),
+                    	config: (spellTemplateManager.currentSystem == "dnd5e"),
         	       	scope: "world",
 	              	onChange: value => {spellTemplateManager.worldConcentration = value;}
         	}
@@ -627,45 +1139,115 @@ function registerSpellTemplateManagerSettings(){
 
 
 Hooks.once("init", () => {
+	spellTemplateManager.currentSystem = game.system.data.name;
+	if((!spellTemplateManager.currentSystem == "dnd5e") && (!spellTemplateManager.currentSystem == "pf2e")){
+		ui.notifications.notify('SpellTemplateManager is only compatible with the DnD5E and PF2E game systems.', "error");
+	}	
 	registerSpellTemplateManagerSettings();
+	async function newHover(wrapped, ...args) {
+		return true;
+	}
+	libWrapper.register("spellTemplateManager", "CONFIG.MeasuredTemplate.objectClass.prototype._canHover", newHover);
 });
 
 Hooks.once('ready', () => {
     try{window.Ardittristan.ColorSetting.tester} catch {
         ui.notifications.notify('Please make sure you have the "lib - ColorSettings" module installed and enabled.', "error");
     }
+    spellTemplateManager.running = true;
+    console.log("Spell Template Manager | Running!");
 });
 
-Hooks.on(`renderItemSheet`, (app, html) =>{
+Hooks.on("renderItemSheet", (app, html) =>{
 	spellTemplateManager.capture = html;
-  const template_types = ["cone", "circle", "rect", "ray"];
-  const add = ".tab.details";
+	const template_types = ["cone", "circle", "rect", "ray"];
+	const add = spellTemplateManager.currentSystem == "dnd5e"?".tab.details":".tab.item-details";
+	if(app.object.type !== "spell" && !template_types.includes(app.object.data.data.target.type)) return;
+	let status = app.object.getFlag("spellTemplateManager","ignore-duration") ?? "";
+	let currentTexture = app.object.getFlag("spellTemplateManager","texture")??"";
+	let useTexture = app.object.getFlag("spellTemplateManager","useTexture")??"";
+	let alpha = app.object.getFlag("spellTemplateManager","alpha")??"50";
+	html.find(add).append(`		
+		<h3 class="form-header">Templates</h3>
+		<div class="form-group">
+			<label>
+				Ignore Spell Duration (Remove Immediately)				
+			</label>
+			<input type="checkbox" style="float:right;" name="spell.template.removal" ${status}>
+		</div>
+  	`);
+	
+	html.find(add).append(`		
+		<div class="form-group">
+			<label>
+			Use Spell Texture				
+			</label>
+			<input type="checkbox" style="float:right;" name="spell.template.useTexture" ${useTexture}>
+		</div>
+  	`);
+	
+	html.find(add).append(`
+		<div class="form-group">
+			<label class="textureSelect" style="float:left;">Texture <input type="text" size="10" style="width: 65%;" name="spell.template.texture.text" value=${currentTexture}  >
+				<input type="button" name="spell.template.texture.bttn" value="Select" style="width: 20%; text-align: center;">
+			</label>
+		</div>
+	`);
 
-  //do not add new value to a item that doesn't need it
-  if(app.object.type !== "spell" && !template_types.includes(app.object.data.data.target.type)) return;
-  //define what the value is
-  let status = app.object.getFlag(`spellTemplateManager`,`ignore-duration`) ?? "";
-  
-  //add the checkbox to the item
-  html.find(add).append(`
-	<h3 class="form-header">Spell Templates</h3>
-	<div class="form-group">
-    <label class="checkbox">
-      <input type="checkbox" name="spell.template.removal" ${status}>
-      Ignore Spell Duration (Remove Immediately)
-    </label>
-	</div>
-  `);
-  
-  //react to the checkbox being changed, saving the value in a flag
-  $('input[name="spell.template.removal"]')[0].onchange = (event) => {
-    let status = event.target.checked ? "checked" : "";
-    app.object.setFlag(`spellTemplateManager`, `ignore-duration`, status);
-  }
+	html.find(add).append(`		
+		<div class="form-group">
+			<label>
+			Alpha (transparency)%				
+			</label>
+			<input type="number" style="float:right;" name="spell.template.alpha" min="10" max="100" value="${alpha}" >
+		</div>
+  	`);
+
+	$('input[name="spell.template.removal"]')[0].onchange = (event) => {
+		let status = event.target.checked ? "checked" : "";
+		app.object.setFlag("spellTemplateManager", "ignore-duration", status);
+	}
+	
+		$('input[name="spell.template.useTexture"]')[0].onchange = (event) => {
+		let useTexture = event.target.checked ? "checked" : "";
+		app.object.setFlag("spellTemplateManager", "useTexture", useTexture);
+	}
+
+	$('input[name="spell.template.alpha"]')[0].onchange = (event) => {
+		let alpha = (0+event.target.valueAsNumber);
+		if(typeof alpha == 'number' && isFinite(alpha)){
+			if(alpha <= 100 && alpha >= 0){
+				app.object.setFlag("spellTemplateManager", "alpha", +alpha);
+			}
+		}
+	}
+
+	$('input[name="spell.template.texture.text"]')[0].onchange = (event) => {
+		let currentTexture = event.target.value;
+		app.object.setFlag("spellTemplateManager", "texture", currentTexture);
+	}		
+
+	let scale = 1;
+	let mfpoptions = {
+		type:"imagevideo",
+		current:currentTexture, 
+		callback: async (...args)=>{
+			app.object.setFlag('spellTemplateManager','texture',args[0]);
+			$('input[name="spell.template.texture.text"]')[0].value=args[0];
+		},
+		allowUpload:true
+	};
+
+	$('input[name="spell.template.texture.bttn"]')[0].onclick = (event) => {
+		let mfp = new FilePicker(mfpoptions);
+		mfp.render();
+	}
 });
-
 
 Hooks.on("renderAbilityUseDialog",(dialog, html) => {
+	
+	if(spellTemplateManager.currentSystem == "dnd5e"){	
+
 	console.log("Spell Template Manager | Ability Use Dialog Capture");
 	document.getElementsByClassName("dialog-button")[0].addEventListener("click",
 		async () => {
@@ -691,7 +1273,7 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 					isSpell=true;
 					console.debug("Spell Template Manager | Spell Cast Detected");
 					let spellLevelSelect = document.querySelectorAll("form#ability-use-form")[0][0].selectedIndex;
-					let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? 0;
+					let spellLevelText = document.querySelectorAll("form#ability-use-form")[0][0][spellLevelSelect]?.innerText ?? "0";
 					let isConsuming = document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked;
 					isAvailable = (spellLevelText.indexOf("0") === -1 || !isConsuming);
 				}	
@@ -700,7 +1282,7 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 					if(document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("This feat ") > -1){
 						console.debug("Spell Template Manager | Recharge Feat Detected");
 						isAvailable = (document.querySelectorAll("form#ability-use-form")[0].children[1].innerText.indexOf("depleted") === -1 ||
-						   document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked == false);	
+						document.querySelectorAll("form#ability-use-form")[0].children[i].children[0].children[0].checked == false);	
 					}
 				}
 			}
@@ -717,9 +1299,30 @@ Hooks.on("renderAbilityUseDialog",(dialog, html) => {
 			}
 		}
 	);
+
+	}
+
 });	
 
-Hooks.on("createMeasuredTemplate",spellTemplateManager.evaluateTemplate);
+Hooks.on("createMeasuredTemplate", (...args) => {
+	if(game.userId == args[2]){
+		spellTemplateManager.evaluateTemplate(args[0],args[1],args[2]);
+		let attempts = 0;
+		let mysi = setInterval(
+		function(){
+			spellTemplateManager.ApplyTextureComplete = false;
+			if(!spellTemplateManager.ApplyTextureComplete && attempts < 10){
+				attempts++;
+				spellTemplateManager.applyTexture(args,mysi);
+			}else{
+				clearInterval(mysi);
+			}
+		});	
+	}	
+});
+
+
+
 
 Hooks.on("preUpdateCombat",(Combat,Round,Diff,User) => {
 	console.debug("Spell Template Manager | PUC Starting");
@@ -757,4 +1360,94 @@ Hooks.on("about-time.eventTrigger", (...args) => {
 		spellTemplateManager.deleteTemplate(args[1]);
 	}
 });
+
+Hooks.on("preCreateChatMessage",(...args) => {
+	if(spellTemplateManager.currentSystem == "pf2e"){
+		spellTemplateManager.parseChatMessage2(args);
+	}
+});
+
+Hooks.on("deleteMeasuredTemplate",e=>{spellTemplateManager.currentTT?.remove();});
+Hooks.on("hoverMeasuredTemplate",e=>{
+	let sourceTemplate = spellTemplateManager.getSourceTemplate(e.data._id);
+	let placeable = spellTemplateManager.getPlaceableTemplate(e.data._id);
+	let mx = e.x;
+	let my = e.y;
+	mx += 30;
+	my -= 30;
+	let ttplayer = game.actors.get(sourceTemplate.data.flags.spellTemplateManager?.actor)?.name??(game.users.get(sourceTemplate.data.user)?.name??"Unknown");
+	let ttspell = sourceTemplate.data.flags.spellTemplateManager?.spell??"???"
+	let ttduration = "";
+	
+	if(spellTemplateManager.usingAT){
+		let ttbd = (sourceTemplate.data.flags.spellTemplateManager?.bd)??0;
+		let tttr = "Unknown";
+		let ttod = (sourceTemplate.data.flags.spellTemplateManager?.duration)??0;
+		if(ttbd > 0){
+			tttr = ((ttod * 6) + ttbd - game.Gametime.ElapsedTime.currentTimeSeconds());
+		}
+		ttduration = "Remaining: "+(tttr)+" seconds";
+		
+	}else{
+		ttduration = '<span style="font-weight:500;">Remaining: </span>' + ((sourceTemplate.data.flags.spellTemplateManager?.duration)??"Unknown") + " rounds";
+	}
+	let scale = document.getElementById("hud").style.transform.substring(6,document.getElementById("hud").style.transform.length-1);
+	if(e._hover){
+		if(spellTemplateManager.currentTT == undefined){
+			spellTemplateManager.currentTT = document.createElement("DIV");
+		}
+		spellTemplateManager.currentTT.innerHTML = '<table><tr style="font-weight:bold;font-size:115%"><td>'+ttplayer+'</td></tr><tr style="font-weight:500"><td>'+ttspell+'</td></tr><tr><td>'+ttduration+'</</td></tr></table>';
+		spellTemplateManager.currentTT.setAttribute("id", "spell-template-manager-tooltip");
+		spellTemplateManager.currentTT.style.position = "absolute";
+		spellTemplateManager.currentTT.style.borderColor = "black";
+		spellTemplateManager.currentTT.style.borderWidth = "2px";
+		spellTemplateManager.currentTT.style.borderStyle = "solid";
+		spellTemplateManager.currentTT.style.backgroundColor = "white";
+		spellTemplateManager.currentTT.style.borderRadius = "5px";
+		spellTemplateManager.currentTT.style.padding = "5px";
+		spellTemplateManager.currentTT.style.left = (mx+"px");
+		spellTemplateManager.currentTT.style.visibility = "visible";
+		spellTemplateManager.currentTT.style.left = (placeable.worldTransform.tx+(placeable.controlIcon.width*scale/2)+10+"px");
+		spellTemplateManager.currentTT.style.top = (placeable.worldTransform.ty-(placeable.controlIcon.width*scale/2)+"px");
+		document.body.appendChild(spellTemplateManager.currentTT);
+		
+	}else{
+		spellTemplateManager.currentTT?.remove();
+	}
+});
+
+Hooks.on("canvasReady",e=> {
+	let placeables = game.canvas.templates.placeables;
+	let mysi = setInterval(
+	function(){
+		try{
+			if(placeables != undefined){
+				clearInterval(mysi);
+				
+				for(let i = 0; i < placeables.length; i++){
+					if(placeables[i].data.flags.spellTemplateManager != undefined){
+						spellTemplateManager.reapplyTexture(placeables[i]);		
+					}
+				}
+			}
+		}catch (e){}
+	},300);
+});
+
+Hooks.on("updateMeasuredTemplate",async (e)=> {
+	console.log("Spell Template Manager | updating template!",e);
+	if((e.data.flags.spellTemplateManager?.spellTexture) != undefined){
+		console.log("Spell Template Manager | Trying to apply texture!");
+		let placeable = spellTemplateManager.getPlaceableTemplate(e.id);
+		if(placeable.data.flags.spellTemplateManager != undefined){
+			try{
+				await placeable.removeChildAt(4);
+				await placeable.removeChildAt(4);
+			}catch{}
+		}
+		spellTemplateManager.reapplyTexture(placeable);		
+	}
+});
+
+
 globalThis.spellTemplateManager = spellTemplateManager;
