@@ -10,13 +10,13 @@ When a template is generated, the template will be analyzed to determine the abi
 In all, there are 5 status of templates: unmanaged, instantaneous, concentration, enduring, and special.  
 Unmanaged templates are any template that was created outside of the AbilityUseDialog.  In the DnD5E system, this is assumed to be manually created templates that were generated using the "Measured Templates" control.  They will utilize the default border color.
 
-Instantaneous templates are templates that have an "instantaneous" duration, and therefore do not require concentration.  By default these templates will utilize a black border.
+**Instantaneous** templates are templates that have an "instantaneous" duration, and therefore do not require concentration.  By default these templates will utilize a black border.
 
-Concentration templates are templates that have a duration greater than instantaneous, but which require concentration to maintain.  By default these templates will utilize a yellow border.
+**Concentration** templates are templates that have a duration greater than instantaneous, but which require concentration to maintain.  By default these templates will utilize a yellow border.
 
-Enduring templates are templates that have a duration greater than instantaneous, but do not require concentration to maintain.  By default these templates will utilize a green border.
+**Enduring** templates are templates that have a duration greater than instantaneous, but do not require concentration to maintain.  By default these templates will utilize a green border.
 
-Special templates are templates that have a non-time-based duration, typically this involves a trigger of some sort.  These templates do not require concentration to maintain.  By default these templates will utilize a white border.  Note: these templates will not be automatically removed by STM, they will require manual deletion.  
+**Special** templates are templates that have a non-time-based duration, typically this involves a trigger of some sort.  These templates do not require concentration to maintain.  By default these templates will utilize a white border.  Note: these templates will not be automatically removed by STM, they will require manual deletion.  
 
 The color's utilized by the 4 managed template types are all configurable via 24-bit Hexadecimal color codes (RRGGBB) in the module settings dialogue.  A color picker is also available to assist in color selection.
 
@@ -26,5 +26,12 @@ Spell Template Manager extends the current Item sheet, and adds additional optio
 
 ## Template ToolTip
 
-Spell Template manager adds a tooltip to the Measured Template tools.  Simply select the Measured Template tools, and hover over a template's control icon to few the Character/Player who placed a template, the spell/item that produced the template, and any remaining duration of the template.  
+Spell Template Manager adds a tooltip to the Measured Template tools.  Simply select the Measured Template tools, and hover over a template's control icon to few the Character/Player who placed a template, the spell/item that produced the template, and any remaining duration of the template.  
 
+## About Time Compatibility
+
+Spell Template Manager fully supports real-time template expiration through use of the **About Time module**.  When this module is installed, a new setting is available in the Foundry settings panel, that will allow you to offload processing to the About Time module.  This is the suggested configuration.  
+
+## Requirements
+
+Spell Template Manager requires the **Color Settings** modlue to support core settings selections, and  the **lib-Wrapper** module to support hover capabilities for players.  
