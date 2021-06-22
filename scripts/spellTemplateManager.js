@@ -133,6 +133,7 @@ class spellTemplateManager {
 	}
 
 	static async applyTexture(args,mysi){
+		console.log(args);
 		if(args[0].data.flags.spellTemplateManager != undefined){
 			let placeable = spellTemplateManager.getPlaceableTemplate(args[0].data.flags.spellTemplateManager.item);
 			if(placeable != undefined){
@@ -143,6 +144,7 @@ class spellTemplateManager {
 				let scale = 1;
 				
 				let originalActor = game.actors.get(args[0].data.flags.spellTemplateManager?.actor);
+				console.log(originalActor);
 				let originalSpellTexture = undefined;
 				let useTexture = undefined;
 				let alpha = 50;
@@ -160,6 +162,7 @@ class spellTemplateManager {
 						}
 					}
 					originalSpellTexture = foundSpell?.flags?.spellTemplateManager?.texture;
+					console.log(originalSpellTexture);
 					originalSpellTexture = originalSpellTexture??originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.texture;
 
 					useTexture = foundSpell?.flags?.spellTemplateManager?.useTexture;
@@ -441,7 +444,7 @@ class spellTemplateManager {
 
 
 
-	static updateTemplate(scene,template,ignoreDuration,isConcentration,isSpecialSpell,index){
+	static updateTemplate(scene,template,ignoreDuration,isConcentration,isSpecialSpell,index,duration=0){
 		console.log("Spell Template Manager | Updating Template");
 		let done = false;
 		if(index < 10 && !done){
@@ -452,52 +455,52 @@ class spellTemplateManager {
 					update = {_id: template.id, flags: {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
-							actor:spellTemplateManager.currentActor.data._id, 
-							duration: spellTemplateManager.currentDurationRounds,
+							actor:spellTemplateManager.currentActor?.data._id, 
+							duration: spellTemplateManager.currentDurationRounds??duration,
 							special: (isSpecialSpell),
 							scene: scene.id,
 							bd: spellTemplateManager.usingAT?game.Gametime.ElapsedTime.currentTimeSeconds():undefined,
 							spell: spellTemplateManager.currentSpell,
-							item: spellTemplateManager.currentItem.id
+							item: spellTemplateManager.currentItem?.id
 						}
 					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'concentrationTemplateColor')).substring(1,7))};
 				}else if(spellTemplateManager.currentDurationRounds>0){
 					update = {_id: template.id, flags: {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
-							actor:spellTemplateManager.currentActor.data._id, 
-							duration: spellTemplateManager.currentDurationRounds,
+							actor:spellTemplateManager.currentActor?.data._id, 
+							duration: spellTemplateManager.currentDurationRounds??duration,
 							special: (isSpecialSpell),
 							scene: spellTemplateManager.currentScene,
 							bd: spellTemplateManager.usingAT?game.Gametime.ElapsedTime.currentTimeSeconds():undefined,
 							spell: spellTemplateManager.currentSpell,
-							item: spellTemplateManager.currentItem.id
+							item: spellTemplateManager.currentItem?.id
 						}
 					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'enduringTemplateColor')).substring(1,7))};
 				}else if(isSpecialSpell){
 					update = {_id: template.id, flags: {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
-							actor:spellTemplateManager.currentActor.data._id, 
-							duration: spellTemplateManager.currentDurationRounds,
+							actor:spellTemplateManager.currentActor?.data._id, 
+							duration: spellTemplateManager.currentDurationRounds??duration,
 							special: (isSpecialSpell),
 							scene: spellTemplateManager.currentScene,
 							bd: spellTemplateManager.usingAT?game.Gametime.ElapsedTime.currentTimeSeconds():undefined,
 							spell: spellTemplateManager.currentSpell,
-							item: spellTemplateManager.currentItem.id
+							item: spellTemplateManager.currentItem?.id
 						}
 					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'specialTemplateColor')).substring(1,7))};
 				}else{
 					update = {_id: template.id, flags: {
 						"spellTemplateManager":{
 							concentration: isConcentration, 
-							actor:spellTemplateManager.currentActor.data._id, 
-							duration: spellTemplateManager.currentDurationRounds,
+							actor:spellTemplateManager.currentActor?.data._id, 
+							duration: spellTemplateManager.currentDurationRounds??duration,
 							special: (isSpecialSpell),
 							scene: spellTemplateManager.currentScene,
 							bd: spellTemplateManager.usingAT?game.Gametime.ElapsedTime.currentTimeSeconds():undefined,
 							spell: spellTemplateManager.currentSpell,
-							item: spellTemplateManager.currentItem.id
+							item: spellTemplateManager.currentItem?.id
 						}
 					},borderColor:("#"+(game.settings.get('spellTemplateManager', 'standardTemplateColor')).substring(1,7))};
 				}
@@ -505,7 +508,7 @@ class spellTemplateManager {
 
 				if(game.settings.get('spellTemplateManager','usingAT')){
 					let roundSeconds = game.settings.get("about-time", "seconds-per-round");	
-					let notifyTime = ignoreDuration?(spellTemplateManager.instantaneousSpellFade*roundSeconds):spellTemplateManager.currentDurationRounds*roundSeconds;
+					let notifyTime = ignoreDuration?(spellTemplateManager.instantaneousSpellFade*roundSeconds):(spellTemplateManager.currentDurationRounds??duration)*roundSeconds;
 					console.log("Creating template timeout in ",notifyTime);	
 					game.Gametime.notifyIn({seconds: notifyTime},"spellTemplateManager",template.id);
 				}
@@ -520,8 +523,7 @@ class spellTemplateManager {
 			done = true;
 		}
 		
-	}
-	
+	}	
 
 	static async deleteTemplate(templateId){
 		console.log("Spell Template Manager | Deleting Template: ", templateId);
@@ -1311,9 +1313,11 @@ Hooks.on("createMeasuredTemplate", (...args) => {
 		let mysi = setInterval(
 		function(){
 			spellTemplateManager.ApplyTextureComplete = false;
-			if(!spellTemplateManager.ApplyTextureComplete && attempts < 10){
+			if(!spellTemplateManager.ApplyTextureComplete && attempts < 20){
 				attempts++;
-				spellTemplateManager.applyTexture(args,mysi);
+				if(args[0].data?.flags?.spellTemplateManager?.actor != undefined){
+					spellTemplateManager.applyTexture(args,mysi);
+				}
 			}else{
 				clearInterval(mysi);
 			}
@@ -1439,15 +1443,32 @@ Hooks.on("updateMeasuredTemplate",async (e)=> {
 	if((e.data.flags.spellTemplateManager?.spellTexture) != undefined){
 		console.log("Spell Template Manager | Trying to apply texture!");
 		let placeable = spellTemplateManager.getPlaceableTemplate(e.id);
+		/*
 		if(placeable.data.flags.spellTemplateManager != undefined){
 			try{
 				await placeable.removeChildAt(4);
 				await placeable.removeChildAt(4);
 			}catch{}
 		}
+		*/
 		spellTemplateManager.reapplyTexture(placeable);		
 	}
 });
 
+Hooks.on("renderMeasuredTemplateConfig", (app, html) =>{
+	let addHeight = html.find('button[type="submit"]')[0].offsetHeight;
+	let currentHeight = html.height();
+	html[0].style.height=`${addHeight+currentHeight}px`;
+	let template = app.object;
+	let duration = template.getFlag("spellTemplateManager","duration")??"";
+	html.find('button[type="submit"]')[0].insertAdjacentHTML('beforebegin', `<div class="form-group"><label>Duration (Rounds)</label><input type="number" style="float:right;" name="spell.template.duration" min="1" value="${duration}"></div>`);
+	
+	$('input[name="spell.template.duration"]')[0].onchange = (event) => {
+		let duration = (0+event.target.valueAsNumber);
+		if(typeof duration == 'number' && isFinite(duration)){
+			spellTemplateManager.updateTemplate(game.scenes.viewed,app.object,"",false,true,0,duration);
+		}
+	}
+});
 
 globalThis.spellTemplateManager = spellTemplateManager;
