@@ -3,7 +3,7 @@
 	"title": "Spell Template Manager - for DnD5e",
 	"description": "A simple module for automatically removing spell templates when spell duration is completed. Also maintains a single concentration spell per character.  Optionally supports the About Time module for handling of timing.",
 	"author": "bitkiller0",
-	"version": "1.1.2"
+	"version": "1.1.2",
 	"minimumCoreVersion": "0.8.6",
 	"compatibleCoreVersion": "0.8.7",
 	"dependencies": [
