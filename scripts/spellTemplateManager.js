@@ -133,7 +133,6 @@ class spellTemplateManager {
 	}
 
 	static async applyTexture(args,mysi){
-		console.log(args);
 		if(args[0].data.flags.spellTemplateManager != undefined){
 			let placeable = spellTemplateManager.getPlaceableTemplate(args[0].data.flags.spellTemplateManager.item);
 			if(placeable != undefined){
@@ -144,7 +143,6 @@ class spellTemplateManager {
 				let scale = 1;
 				
 				let originalActor = game.actors.get(args[0].data.flags.spellTemplateManager?.actor);
-				console.log(originalActor);
 				let originalSpellTexture = undefined;
 				let useTexture = undefined;
 				let alpha = 50;
@@ -163,7 +161,6 @@ class spellTemplateManager {
 						}
 					}
 					originalSpellTexture = foundSpell?.flags?.spellTemplateManager?.texture;
-					console.log(originalSpellTexture);
 					originalSpellTexture = originalSpellTexture??originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.texture;
 
 					useTexture = foundSpell?.flags?.spellTemplateManager?.useTexture;
@@ -226,8 +223,6 @@ class spellTemplateManager {
 						case "cone":
 							let coneOrigin = placeable.getFlag("spellTemplateManager","coneOrigin");
 							{
-								console.log("placeable: ",placeable);
-								console.log("Origin: ",coneOrigin);
 								switch(coneOrigin){
 									case 0:
 										if(STMtexture == undefined){
@@ -406,8 +401,6 @@ class spellTemplateManager {
 				case "cone":
 					let coneOrigin = placeable.getFlag("spellTemplateManager","coneOrigin");
 					{
-						console.log("placeable: ",placeable);
-						console.log("Origin: ",coneOrigin);
 						switch(coneOrigin){
 							case 0:
 							default:
@@ -711,7 +704,6 @@ class spellTemplateManager {
 				if(game.settings.get('spellTemplateManager','usingAT')){
 					let roundSeconds = game.settings.get("about-time", "seconds-per-round");	
 					let notifyTime = ignoreDuration?(spellTemplateManager.instantaneousSpellFade*roundSeconds):(spellTemplateManager.currentDurationRounds??duration)*roundSeconds;
-					console.log("Creating template timeout in ",notifyTime);	
 					game.Gametime.notifyIn({seconds: notifyTime},"spellTemplateManager",template.id);
 				}
 				spellTemplateManager.resetItemData();  
@@ -1408,7 +1400,6 @@ Hooks.on("renderItemSheet", (app, html) =>{
   	`);
 
 	coneOrigin = app.object.getFlag("spellTemplateManager","coneOrigin")??"";
-console.log(app.object);
 	if(app.object.data.data?.target?.type == "cone" || app.object.data.spellInfo?.area?.areaType == "cone"){
 		html.find(add).append(`		
 		<div class="form-group">
@@ -1467,9 +1458,7 @@ console.log(app.object);
 
 	$('select[name="spell.template.cone.origin"]')[0].onchange = (event) => {
 		let coneOrigin = event.target.selectedIndex;
-		console.log("Cone Origin: ",coneOrigin);
 		app.object.setFlag("spellTemplateManager","coneOrigin",coneOrigin);
-		console.log(event.target.selectedIndex);
 	}
 });
 
@@ -1670,14 +1659,6 @@ Hooks.on("updateMeasuredTemplate",async (e)=> {
 	if((e.data.flags.spellTemplateManager?.spellTexture) != undefined){
 		console.log("Spell Template Manager | Trying to apply texture!");
 		let placeable = spellTemplateManager.getPlaceableTemplate(e.id);
-		/*
-		if(placeable.data.flags.spellTemplateManager != undefined){
-			try{
-				await placeable.removeChildAt(4);
-				await placeable.removeChildAt(4);
-			}catch{}
-		}
-		*/
 		spellTemplateManager.reapplyTexture(placeable);		
 	}
 });
