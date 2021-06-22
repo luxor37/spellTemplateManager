@@ -148,6 +148,7 @@ class spellTemplateManager {
 				let originalSpellTexture = undefined;
 				let useTexture = undefined;
 				let alpha = 50;
+				let coneOrigin = undefined;
 
 
 					let originalToken = game.scenes.active.tokens.filter(i=>{return (i.actor.id==(args[0].data?.flags?.spellTemplateManager?.actor))})[0];
@@ -171,12 +172,15 @@ class spellTemplateManager {
 					alpha = foundSpell?.flags?.spellTemplateManager?.alpha;
 					alpha = (alpha??originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.alpha)??50;
 
+					coneOrigin = foundSpell?.flags?.spellTemplateManager?.coneOrigin;
+					coneOrigin = coneOrigin??originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.coneOrigin??1;
 
 
 
 				placeable.setFlag("spellTemplateManager","spellTexture",originalSpellTexture);
 				await placeable.setFlag("spellTemplateManager","useTexture",useTexture);
 				placeable.setFlag("spellTemplateManager","alpha",alpha);
+				placeable.setFlag("spellTemplateManager","coneOrigin",coneOrigin);
 
 						
 				if(("" != (useTexture??"")) && "" != (originalSpellTexture??"")){
@@ -193,7 +197,7 @@ class spellTemplateManager {
 					let workingWidth = undefined;
 					switch(placeable.data.t){
 						case "circle":
-		        				if(STMtexture == undefined){
+		        			if(STMtexture == undefined){
 								STMtexture = await loadTexture(originalSpellTexture);
 								textureSize = placeable.height;
 								STMtexture.orig = { height: (textureSize * scale), width: textureSize * scale, x: -textureSize, y: -textureSize };
@@ -220,37 +224,79 @@ class spellTemplateManager {
 							sprite.mask=masker;
 							break;
 						case "cone":
-		        				if(STMtexture == undefined){
-								STMtexture = await loadTexture(originalSpellTexture);
-								spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+							let coneOrigin = placeable.getFlag("spellTemplateManager","coneOrigin");
+							{
+								console.log("placeable: ",placeable);
+								console.log("Origin: ",coneOrigin);
+								switch(coneOrigin){
+									case 0:
+										if(STMtexture == undefined){
+											STMtexture = await loadTexture(originalSpellTexture);
+											workingWidth =  placeable.ray._distance;
+											textureSize = workingWidth * 2;
+											STMtexture.orig = { height: (textureSize * scale), width: textureSize * scale, x: -textureSize, y: -textureSize };
+											spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+										}
+										sprite = new PIXI.Sprite(STMtexture);
+										sprite.anchor.set(0.5);
+										sprite.alpha = alpha/100
+										sprite.angle = placeable.data.direction;
+										icon = await placeable.addChild(sprite);
+										source = getProperty(icon._texture, "baseTexture.resource.source");
+										if (source && (source.tagName === "VIDEO")) {
+											source.loop = true;
+											source.muted = true;
+											game.video.play(source);
+										}
+										icon.zIndex = -1000;
+										masker = new PIXI.Graphics();
+										masker.beginFill(0x00FF00);
+										masker.lineStyle(1, 0xFFFF00);
+										masker.moveTo(0, 0);
+										masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
+										masker.lineTo(0, 0);
+										masker.endFill();
+										masker.zIndex = -1000;
+										placeable.addChild(masker);
+										sprite.mask=masker;
+										break;
+									case 1:
+									default:							
+										if(STMtexture == undefined){
+											STMtexture = await loadTexture(originalSpellTexture);
+											spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+										}
+										workingWidth =  placeable.ray._distance;
+										textureSize = placeable.data.height * canvas.grid.size;
+										sprite = new PIXI.Sprite(STMtexture)
+										sprite.anchor.set(0,0.5)
+										sprite.width=workingWidth;
+										sprite.height=Math.sqrt((workingWidth**2)+(workingWidth**2));
+										sprite.alpha = alpha/100;
+										sprite.angle = placeable.data.direction;
+										icon = await placeable.addChild(sprite)
+										source = getProperty(icon._texture, "baseTexture.resource.source");
+										if (source && (source.tagName === "VIDEO")) {
+											source.loop = true;
+											source.muted = true;
+											game.video.play(source);
+										}
+										icon.zIndex = -1000;
+										masker = new PIXI.Graphics();
+										masker.beginFill(0x00FF00);
+										masker.lineStyle(1, 0xFFFF00);
+										masker.moveTo(0, 0);
+										masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
+										masker.lineTo(0, 0);
+										masker.endFill();
+										masker.zIndex = -1000;
+										placeable.addChild(masker);
+										sprite.mask=masker;
+										break;
+								}
 							}
-							workingWidth =  placeable.ray._distance;
-							sprite = new PIXI.Sprite(STMtexture)
-							sprite.anchor.set(0,0.5)
-							sprite.width=workingWidth;
-							sprite.height=Math.sqrt((workingWidth**2)+(workingWidth**2));
-							sprite.alpha = alpha/100;
-							sprite.angle = placeable.data.direction;
-							icon = await placeable.addChild(sprite)
-							source = getProperty(icon._texture, "baseTexture.resource.source");
-							if (source && (source.tagName === "VIDEO")) {
-								source.loop = true;
-								source.muted = true;
-								game.video.play(source);
-							}
-							icon.zIndex = -1000;
-							masker = new PIXI.Graphics();
-							masker.beginFill(0x00FF00);
-							masker.lineStyle(1, 0xFFFF00);
-							masker.moveTo(0, 0);
-							masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
-							masker.lineTo(0, 0);
-							masker.endFill();
-							masker.zIndex = -1000;
-							placeable.addChild(masker);
-							sprite.mask=masker;
 							break;
-						case "rect":
+								case "rect":
 							if(STMtexture == undefined){
 								STMtexture = await loadTexture(originalSpellTexture);
 								spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
@@ -318,7 +364,7 @@ class spellTemplateManager {
 		let useTexture = placeable.getFlag("spellTemplateManager","useTexture");
 		if(("" != (useTexture??"")) && "" != (originalSpellTexture??"")){
 
-			let STMtexture = spellTemplateManager.textureMap.get(originalSpellTexture);	
+			let STMtexture = undefined;	
 			let textureSize = undefined;
 			let sprite = undefined;
 			let masker = undefined;
@@ -328,6 +374,7 @@ class spellTemplateManager {
 			let mask = undefined;
 			let source = undefined;
 			let workingWidth = undefined;
+			let container = undefined;
 			switch(placeable.data.t){
 				case "circle":
 		        		if(STMtexture == undefined){
@@ -357,37 +404,192 @@ class spellTemplateManager {
 					sprite.mask=masker;
 					break;
 				case "cone":
-		        		if(STMtexture == undefined){
-						STMtexture = await loadTexture(originalSpellTexture);
-						spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+					let coneOrigin = placeable.getFlag("spellTemplateManager","coneOrigin");
+					{
+						console.log("placeable: ",placeable);
+						console.log("Origin: ",coneOrigin);
+						switch(coneOrigin){
+							case 0:
+							default:
+								if(STMtexture == undefined){
+									STMtexture = await loadTexture(originalSpellTexture);
+									workingWidth =  placeable.ray._distance;
+									textureSize = workingWidth * 2;
+									STMtexture.orig = { height: (textureSize * scale), width: textureSize * scale, x: -textureSize, y: -textureSize };
+									spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+								}
+								sprite = new PIXI.Sprite(STMtexture);
+								sprite.anchor.set(0.5);
+								sprite.alpha = alpha/100
+								sprite.angle = placeable.data.direction;
+								icon = await placeable.addChild(sprite);
+								source = getProperty(icon._texture, "baseTexture.resource.source");
+								if (source && (source.tagName === "VIDEO")) {
+									source.loop = true;
+									source.muted = true;
+									game.video.play(source);
+								}
+								icon.zIndex = -1000;
+								masker = new PIXI.Graphics();
+								masker.beginFill(0x00FF00);
+								masker.lineStyle(1, 0xFFFF00);
+								masker.moveTo(0, 0);
+								masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
+								masker.lineTo(0, 0);
+								masker.endFill();
+								masker.zIndex = -1000;
+								placeable.addChild(masker);
+								sprite.mask=masker;
+								break;
+							case 1:											
+								if(STMtexture == undefined){
+									STMtexture = await loadTexture(originalSpellTexture);
+									spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+								}
+								workingWidth =  placeable.ray._distance;
+								textureSize = placeable.data.height * canvas.grid.size;
+								sprite = new PIXI.Sprite(STMtexture)
+								sprite.anchor.set(0,0.5)
+								sprite.width=workingWidth;
+								sprite.height=Math.sqrt((workingWidth**2)+(workingWidth**2));
+								sprite.alpha = alpha/100;
+								sprite.angle = placeable.data.direction;
+								icon = await placeable.addChild(sprite)
+								source = getProperty(icon._texture, "baseTexture.resource.source");
+								if (source && (source.tagName === "VIDEO")) {
+									source.loop = true;
+									source.muted = true;
+									game.video.play(source);
+								}
+								icon.zIndex = -1000;
+								masker = new PIXI.Graphics();
+								masker.beginFill(0x00FF00);
+								masker.lineStyle(1, 0xFFFF00);
+								masker.moveTo(0, 0);
+								masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
+								masker.lineTo(0, 0);
+								masker.endFill();
+								masker.zIndex = -1000;
+								placeable.addChild(masker);
+								sprite.mask=masker;
+								break;
+							case 2:														
+								if(STMtexture == undefined){
+									STMtexture = await loadTexture(originalSpellTexture);
+									spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+								}
+								workingWidth =  placeable.ray._distance;
+								textureSize = placeable.data.height * canvas.grid.size;
+								sprite = new PIXI.Sprite(STMtexture)
+								sprite.anchor.set(1,0.5)
+								sprite.width=workingWidth*-1;
+								sprite.height=Math.sqrt((workingWidth**2)+(workingWidth**2));
+								sprite.alpha = alpha/100;
+								sprite.angle = placeable.data.direction;
+								icon = await placeable.addChild(sprite)
+								source = getProperty(icon._texture, "baseTexture.resource.source");
+								if (source && (source.tagName === "VIDEO")) {
+									source.loop = true;
+									source.muted = true;
+									game.video.play(source);
+								}
+								icon.zIndex = -1000;
+								masker = new PIXI.Graphics();
+									masker.beginFill(0x00FF00);
+									masker.lineStyle(1, 0xFFFF00);
+									masker.moveTo(0, 0);
+									masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
+									masker.lineTo(0, 0);
+									masker.endFill();
+									masker.zIndex = -1000;
+									placeable.addChild(masker);
+									sprite.mask=masker;									
+									break;
+							case 3:								
+								if(STMtexture == undefined){
+									STMtexture = await loadTexture(originalSpellTexture);
+									spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+								}
+								workingWidth =  placeable.ray._distance;
+								textureSize = placeable.data.height * canvas.grid.size;
+								container = new PIXI.Container;
+								container.zIndex = -1000;
+								sprite = new PIXI.Sprite(STMtexture)
+								container.pivot.x = 0.5;
+								container.pivot.y = 0.5;
+								sprite.width=Math.sqrt((workingWidth**2)+(workingWidth**2));
+								sprite.anchor.set(0.5,0.5);
+								sprite.angle=-90;
+								sprite.height=workingWidth;
+								sprite.alpha = alpha/100;
+								sprite.x=sprite.height/2;
+								container.angle = placeable.data.direction;
+								icon = await container.addChild(sprite)
+								await placeable.addChild(container);
+								
+								source = getProperty(icon._texture, "baseTexture.resource.source");
+								if (source && (source.tagName === "VIDEO")) {
+									source.loop = true;
+									source.muted = true;
+									game.video.play(source);
+								}
+								icon.zIndex = -1000;
+								masker = new PIXI.Graphics();
+								masker.beginFill(0x00FF00);
+								masker.lineStyle(1, 0xFFFF00);
+								masker.moveTo(0, 0);
+								masker.arc(0, 0, workingWidth, 0 - Math.PI/180/2*placeable.data.angle, 0 + Math.PI/180/2*placeable.data.angle, false);
+								masker.lineTo(0, 0);
+								masker.endFill();
+								masker.zIndex = -1000;
+								container.addChild(masker);
+								sprite.mask=masker;
+								break;
+							case 4:					
+									if(STMtexture == undefined){
+										STMtexture = await loadTexture(originalSpellTexture);
+										spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+									}
+									workingWidth =  placeable.ray._distance;
+									textureSize = placeable.data.height * canvas.grid.size;
+									container = new PIXI.Container;
+									container.zIndex = -1000;
+									sprite = new PIXI.Sprite(STMtexture)
+									container.pivot.x = 0.5;
+									container.pivot.y = 0.5;
+									sprite.width=Math.sqrt((workingWidth**2)+(workingWidth**2));
+									sprite.anchor.set(0.5,0.5);
+									sprite.angle=90;
+									sprite.height=workingWidth;
+									sprite.alpha = alpha/100;
+									sprite.x=sprite.height/2;
+									container.angle = placeable.data.direction;
+									icon = await container.addChild(sprite)
+									await placeable.addChild(container);
+									
+									source = getProperty(icon._texture, "baseTexture.resource.source");
+									if (source && (source.tagName === "VIDEO")) {
+										source.loop = true;
+										source.muted = true;
+										game.video.play(source);
+									}
+									icon.zIndex = -1000;
+									masker = new PIXI.Graphics();
+									masker.beginFill(0x00FF00);
+									masker.lineStyle(1, 0xFFFF00);
+									masker.moveTo(0, 0);
+									masker.arc(0, 0, workingWidth, 0 - Math.PI/180/2*placeable.data.angle, 0 + Math.PI/180/2*placeable.data.angle, false);
+									masker.lineTo(0, 0);
+									masker.endFill();
+									masker.zIndex = -1000;
+									container.addChild(masker);
+									sprite.mask=masker;
+									break;
+						}
 					}
-					workingWidth =  placeable.ray._distance;
-					textureSize = placeable.data.height * canvas.grid.size;
-					sprite = new PIXI.Sprite(STMtexture)
-					sprite.anchor.set(0,0.5)
-					sprite.width=workingWidth;
-					sprite.height=Math.sqrt((workingWidth**2)+(workingWidth**2));
-					sprite.alpha = alpha/100;
-					sprite.angle = placeable.data.direction;
-					icon = await placeable.addChild(sprite)
-					source = getProperty(icon._texture, "baseTexture.resource.source");
-					if (source && (source.tagName === "VIDEO")) {
-						source.loop = true;
-						source.muted = true;
-						game.video.play(source);
-					}
-					icon.zIndex = -1000;
-					masker = new PIXI.Graphics();
-					masker.beginFill(0x00FF00);
-					masker.lineStyle(1, 0xFFFF00);
-					masker.moveTo(0, 0);
-					masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
-					masker.lineTo(0, 0);
-					masker.endFill();
-					masker.zIndex = -1000;
-					placeable.addChild(masker);
-					sprite.mask=masker;
 					break;
+
+
 				case "rect":
 		        		if(STMtexture == undefined){
 						STMtexture = await loadTexture(originalSpellTexture);
@@ -1161,14 +1363,14 @@ Hooks.once('ready', () => {
 });
 
 Hooks.on("renderItemSheet", (app, html) =>{
-	spellTemplateManager.capture = html;
 	const template_types = ["cone", "circle", "rect", "ray"];
 	const add = spellTemplateManager.currentSystem == "dnd5e"?".tab.details":".tab.item-details";
-	if(app.object.type !== "spell" && !template_types.includes(app.object.data.data.target.type)) return;
+	if(app.object.type !== "spell" && (!template_types.includes(app.object.data.data?.target?.type) || !template_types.includes(app.object.data.spellInfo?.area?.areaType))) return;
 	let status = app.object.getFlag("spellTemplateManager","ignore-duration") ?? "";
 	let currentTexture = app.object.getFlag("spellTemplateManager","texture")??"";
 	let useTexture = app.object.getFlag("spellTemplateManager","useTexture")??"";
 	let alpha = app.object.getFlag("spellTemplateManager","alpha")??"50";
+	let coneOrigin = app.object.getFlag("spellTemplateManager","cone-origin")??"";
 	html.find(add).append(`		
 		<h3 class="form-header">Templates</h3>
 		<div class="form-group">
@@ -1204,6 +1406,24 @@ Hooks.on("renderItemSheet", (app, html) =>{
 			<input type="number" style="float:right;" name="spell.template.alpha" min="10" max="100" value="${alpha}" >
 		</div>
   	`);
+
+	coneOrigin = app.object.getFlag("spellTemplateManager","coneOrigin")??"";
+console.log(app.object);
+	if(app.object.data.data?.target?.type == "cone" || app.object.data.spellInfo?.area?.areaType == "cone"){
+		html.find(add).append(`		
+		<div class="form-group">
+			<label>
+			Cone texture Origin				
+			</label><select name="spell.template.cone.origin">
+				<option value="Center" ${coneOrigin==0?"selected":""}>Center</option>
+				<option value="Left" ${coneOrigin==1?"selected":""}>Left</option>
+				<option value="Right" ${coneOrigin==2?"selected":""}>Right</option>
+				<option value="Top" ${coneOrigin==3?"selected":""}>Top</option>
+				<option value="Bottom" ${coneOrigin==4?"selected":""}>Bottom</option>
+		  	</select>
+		</div>
+  		`);	
+	}
 
 	$('input[name="spell.template.removal"]')[0].onchange = (event) => {
 		let status = event.target.checked ? "checked" : "";
@@ -1243,6 +1463,13 @@ Hooks.on("renderItemSheet", (app, html) =>{
 	$('input[name="spell.template.texture.bttn"]')[0].onclick = (event) => {
 		let mfp = new FilePicker(mfpoptions);
 		mfp.render();
+	}
+
+	$('select[name="spell.template.cone.origin"]')[0].onchange = (event) => {
+		let coneOrigin = event.target.selectedIndex;
+		console.log("Cone Origin: ",coneOrigin);
+		app.object.setFlag("spellTemplateManager","coneOrigin",coneOrigin);
+		console.log(event.target.selectedIndex);
 	}
 });
 
