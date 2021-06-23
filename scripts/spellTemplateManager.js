@@ -176,12 +176,13 @@ class spellTemplateManager {
 					loopAnimations = foundSpell?.flags?.spellTemplateManager?.loopAnimations;
 					loopAnimations = loopAnimations??originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.loopAnimations??"checked";
 
-
+/*
 				placeable.setFlag("spellTemplateManager","spellTexture",originalSpellTexture);
 				placeable.setFlag("spellTemplateManager","useTexture",useTexture);
 				placeable.setFlag("spellTemplateManager","alpha",alpha);
 				placeable.setFlag("spellTemplateManager","coneOrigin",coneOrigin);
 				placeable.setFlag("spellTemplateManager","loopAnimations",loopAnimations);
+*/
 						
 				if(("" != (useTexture??"")) && "" != (originalSpellTexture??"")){
 
