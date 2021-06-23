@@ -147,6 +147,7 @@ class spellTemplateManager {
 				let useTexture = undefined;
 				let alpha = 50;
 				let coneOrigin = undefined;
+				let loopAnimations = undefined;
 
 
 					let originalToken = game.scenes.active.tokens.filter(i=>{return (i.actor.id==(args[0].data?.flags?.spellTemplateManager?.actor))})[0];
@@ -172,17 +173,19 @@ class spellTemplateManager {
 					coneOrigin = foundSpell?.flags?.spellTemplateManager?.coneOrigin;
 					coneOrigin = coneOrigin??originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.coneOrigin??1;
 
+					loopAnimations = foundSpell?.flags?.spellTemplateManager?.loopAnimations;
+					loopAnimations = loopAnimations??originalActor.items.get(args[0].data.flags.spellTemplateManager.item).data.flags.spellTemplateManager.loopAnimations??"checked";
 
 
 				placeable.setFlag("spellTemplateManager","spellTexture",originalSpellTexture);
-				await placeable.setFlag("spellTemplateManager","useTexture",useTexture);
+				placeable.setFlag("spellTemplateManager","useTexture",useTexture);
 				placeable.setFlag("spellTemplateManager","alpha",alpha);
 				placeable.setFlag("spellTemplateManager","coneOrigin",coneOrigin);
-
+				placeable.setFlag("spellTemplateManager","loopAnimations",loopAnimations);
 						
 				if(("" != (useTexture??"")) && "" != (originalSpellTexture??"")){
-	
-					let STMtexture = spellTemplateManager.textureMap.get(originalSpellTexture);	
+
+					let STMtexture = undefined;	
 					let textureSize = undefined;
 					let sprite = undefined;
 					let masker = undefined;
@@ -192,9 +195,10 @@ class spellTemplateManager {
 					let mask = undefined;
 					let source = undefined;
 					let workingWidth = undefined;
+					let container = undefined;
 					switch(placeable.data.t){
 						case "circle":
-		        			if(STMtexture == undefined){
+								if(STMtexture == undefined){
 								STMtexture = await loadTexture(originalSpellTexture);
 								textureSize = placeable.height;
 								STMtexture.orig = { height: (textureSize * scale), width: textureSize * scale, x: -textureSize, y: -textureSize };
@@ -206,7 +210,7 @@ class spellTemplateManager {
 							icon = await placeable.addChild(sprite);
 							source = getProperty(icon._texture, "baseTexture.resource.source");
 							if (source && (source.tagName === "VIDEO")) {
-								source.loop = true;
+								source.loop = (loopAnimations=="checked");
 								source.muted = true;
 								game.video.play(source);
 							}
@@ -215,7 +219,7 @@ class spellTemplateManager {
 							masker.beginFill(0xFF0000, 1);
 							masker.lineStyle(0);
 							masker.drawCircle(0, 0, placeable.ray.distance);
-				        		masker.endFill();
+							masker.endFill();
 							masker.zIndex = -1000;
 							mask = await placeable.addChild(masker);
 							sprite.mask=masker;
@@ -225,6 +229,7 @@ class spellTemplateManager {
 							{
 								switch(coneOrigin){
 									case 0:
+									default:
 										if(STMtexture == undefined){
 											STMtexture = await loadTexture(originalSpellTexture);
 											workingWidth =  placeable.ray._distance;
@@ -239,7 +244,7 @@ class spellTemplateManager {
 										icon = await placeable.addChild(sprite);
 										source = getProperty(icon._texture, "baseTexture.resource.source");
 										if (source && (source.tagName === "VIDEO")) {
-											source.loop = true;
+											source.loop = (loopAnimations=="checked");
 											source.muted = true;
 											game.video.play(source);
 										}
@@ -255,8 +260,7 @@ class spellTemplateManager {
 										placeable.addChild(masker);
 										sprite.mask=masker;
 										break;
-									case 1:
-									default:							
+									case 1:											
 										if(STMtexture == undefined){
 											STMtexture = await loadTexture(originalSpellTexture);
 											spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
@@ -272,7 +276,7 @@ class spellTemplateManager {
 										icon = await placeable.addChild(sprite)
 										source = getProperty(icon._texture, "baseTexture.resource.source");
 										if (source && (source.tagName === "VIDEO")) {
-											source.loop = true;
+											source.loop = (loopAnimations=="checked");
 											source.muted = true;
 											game.video.play(source);
 										}
@@ -288,11 +292,125 @@ class spellTemplateManager {
 										placeable.addChild(masker);
 										sprite.mask=masker;
 										break;
+									case 2:														
+										if(STMtexture == undefined){
+											STMtexture = await loadTexture(originalSpellTexture);
+											spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+										}
+										workingWidth =  placeable.ray._distance;
+										textureSize = placeable.data.height * canvas.grid.size;
+										sprite = new PIXI.Sprite(STMtexture)
+										sprite.anchor.set(1,0.5)
+										sprite.width=workingWidth*-1;
+										sprite.height=Math.sqrt((workingWidth**2)+(workingWidth**2));
+										sprite.alpha = alpha/100;
+										sprite.angle = placeable.data.direction;
+										icon = await placeable.addChild(sprite)
+										source = getProperty(icon._texture, "baseTexture.resource.source");
+										if (source && (source.tagName === "VIDEO")) {
+											source.loop = (loopAnimations=="checked");
+											source.muted = true;
+											game.video.play(source);
+										}
+										icon.zIndex = -1000;
+										masker = new PIXI.Graphics();
+											masker.beginFill(0x00FF00);
+											masker.lineStyle(1, 0xFFFF00);
+											masker.moveTo(0, 0);
+											masker.arc(0, 0, workingWidth, (Math.PI/180*placeable.data.direction) - Math.PI/180/2*placeable.data.angle, (Math.PI/180*placeable.data.direction) + Math.PI/180/2*placeable.data.angle, false);
+											masker.lineTo(0, 0);
+											masker.endFill();
+											masker.zIndex = -1000;
+											placeable.addChild(masker);
+											sprite.mask=masker;									
+											break;
+									case 3:								
+										if(STMtexture == undefined){
+											STMtexture = await loadTexture(originalSpellTexture);
+											spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+										}
+										workingWidth =  placeable.ray._distance;
+										textureSize = placeable.data.height * canvas.grid.size;
+										container = new PIXI.Container;
+										container.zIndex = -1000;
+										sprite = new PIXI.Sprite(STMtexture)
+										container.pivot.x = 0.5;
+										container.pivot.y = 0.5;
+										sprite.width=Math.sqrt((workingWidth**2)+(workingWidth**2));
+										sprite.anchor.set(0.5,0.5);
+										sprite.angle=-90;
+										sprite.height=workingWidth;
+										sprite.alpha = alpha/100;
+										sprite.x=sprite.height/2;
+										container.angle = placeable.data.direction;
+										icon = await container.addChild(sprite)
+										await placeable.addChild(container);
+										
+										source = getProperty(icon._texture, "baseTexture.resource.source");
+										if (source && (source.tagName === "VIDEO")) {
+											source.loop = (loopAnimations=="checked");
+											source.muted = true;
+											game.video.play(source);
+										}
+										icon.zIndex = -1000;
+										masker = new PIXI.Graphics();
+										masker.beginFill(0x00FF00);
+										masker.lineStyle(1, 0xFFFF00);
+										masker.moveTo(0, 0);
+										masker.arc(0, 0, workingWidth, 0 - Math.PI/180/2*placeable.data.angle, 0 + Math.PI/180/2*placeable.data.angle, false);
+										masker.lineTo(0, 0);
+										masker.endFill();
+										masker.zIndex = -1000;
+										container.addChild(masker);
+										sprite.mask=masker;
+										break;
+									case 4:					
+											if(STMtexture == undefined){
+												STMtexture = await loadTexture(originalSpellTexture);
+												spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
+											}
+											workingWidth =  placeable.ray._distance;
+											textureSize = placeable.data.height * canvas.grid.size;
+											container = new PIXI.Container;
+											container.zIndex = -1000;
+											sprite = new PIXI.Sprite(STMtexture)
+											container.pivot.x = 0.5;
+											container.pivot.y = 0.5;
+											sprite.width=Math.sqrt((workingWidth**2)+(workingWidth**2));
+											sprite.anchor.set(0.5,0.5);
+											sprite.angle=90;
+											sprite.height=workingWidth;
+											sprite.alpha = alpha/100;
+											sprite.x=sprite.height/2;
+											container.angle = placeable.data.direction;
+											icon = await container.addChild(sprite)
+											await placeable.addChild(container);
+											
+											source = getProperty(icon._texture, "baseTexture.resource.source");
+											if (source && (source.tagName === "VIDEO")) {
+												source.loop = (loopAnimations=="checked");
+												source.muted = true;
+												game.video.play(source);
+											}
+											icon.zIndex = -1000;
+											masker = new PIXI.Graphics();
+											masker.beginFill(0x00FF00);
+											masker.lineStyle(1, 0xFFFF00);
+											masker.moveTo(0, 0);
+											masker.arc(0, 0, workingWidth, 0 - Math.PI/180/2*placeable.data.angle, 0 + Math.PI/180/2*placeable.data.angle, false);
+											masker.lineTo(0, 0);
+											masker.endFill();
+											masker.zIndex = -1000;
+											container.addChild(masker);
+											sprite.mask=masker;
+											break;
 								}
 							}
 							break;
-								case "rect":
-							if(STMtexture == undefined){
+		
+		
+						case "rect":
+								if(STMtexture == undefined){
 								STMtexture = await loadTexture(originalSpellTexture);
 								spellTemplateManager.textureMap.set(originalSpellTexture,STMtexture);
 							}
@@ -309,7 +427,7 @@ class spellTemplateManager {
 							)
 							source = getProperty(icon._texture, "baseTexture.resource.source");
 							if (source && (source.tagName === "VIDEO")) {
-								source.loop = true;
+								source.loop = (loopAnimations=="checked");
 								source.muted = true;
 								game.video.play(source);
 							}
@@ -327,17 +445,16 @@ class spellTemplateManager {
 							sprite.anchor.set(0,0.5);
 							sprite.rotation=placeable.ray.normAngle;
 							sprite.alpha = alpha/100;
-							icon = await placeable.addChild(sprite)
+							icon = await placeable.addChild(sprite);
 							source = getProperty(icon._texture, "baseTexture.resource.source");
 							if (source && (source.tagName === "VIDEO")) {
-								source.loop = true;
+								source.loop = (loopAnimations=="checked");
 								source.muted = true;
 								game.video.play(source);
 							}
 							icon.zIndex = -1000;
-							
 							break;
-
+		
 					}
 				}
 			}
@@ -355,8 +472,10 @@ class spellTemplateManager {
 		}
 		let scale = 1;
 		let originalSpellTexture = placeable.document.getFlag("spellTemplateManager","spellTexture");
-		let alpha = placeable.getFlag("spellTemplateManager","alpha");
-		let useTexture = placeable.getFlag("spellTemplateManager","useTexture");
+		let alpha = placeable.getFlag("spellTemplateManager","alpha")??50;
+		let useTexture = placeable.getFlag("spellTemplateManager","useTexture")??"checked";
+		let loopAnimations = placeable.getFlag("spellTemplateManager","loopAnimations")??"checked";
+		console.log("Loop: ",loopAnimations,(loopAnimations=="checked"));
 		if(("" != (useTexture??"")) && "" != (originalSpellTexture??"")){
 
 			let STMtexture = undefined;	
@@ -384,7 +503,7 @@ class spellTemplateManager {
 					icon = await placeable.addChild(sprite);
 					source = getProperty(icon._texture, "baseTexture.resource.source");
 					if (source && (source.tagName === "VIDEO")) {
-						source.loop = true;
+						source.loop = (loopAnimations=="checked");
 						source.muted = true;
 						game.video.play(source);
 					}
@@ -393,7 +512,7 @@ class spellTemplateManager {
 					masker.beginFill(0xFF0000, 1);
 					masker.lineStyle(0);
 					masker.drawCircle(0, 0, placeable.ray.distance);
-		        		masker.endFill();
+		        	masker.endFill();
 					masker.zIndex = -1000;
 					mask = await placeable.addChild(masker);
 					sprite.mask=masker;
@@ -418,7 +537,7 @@ class spellTemplateManager {
 								icon = await placeable.addChild(sprite);
 								source = getProperty(icon._texture, "baseTexture.resource.source");
 								if (source && (source.tagName === "VIDEO")) {
-									source.loop = true;
+									source.loop = (loopAnimations=="checked");
 									source.muted = true;
 									game.video.play(source);
 								}
@@ -450,7 +569,7 @@ class spellTemplateManager {
 								icon = await placeable.addChild(sprite)
 								source = getProperty(icon._texture, "baseTexture.resource.source");
 								if (source && (source.tagName === "VIDEO")) {
-									source.loop = true;
+									source.loop = (loopAnimations=="checked");
 									source.muted = true;
 									game.video.play(source);
 								}
@@ -482,7 +601,7 @@ class spellTemplateManager {
 								icon = await placeable.addChild(sprite)
 								source = getProperty(icon._texture, "baseTexture.resource.source");
 								if (source && (source.tagName === "VIDEO")) {
-									source.loop = true;
+									source.loop = (loopAnimations=="checked");
 									source.muted = true;
 									game.video.play(source);
 								}
@@ -522,7 +641,7 @@ class spellTemplateManager {
 								
 								source = getProperty(icon._texture, "baseTexture.resource.source");
 								if (source && (source.tagName === "VIDEO")) {
-									source.loop = true;
+									source.loop = (loopAnimations=="checked");
 									source.muted = true;
 									game.video.play(source);
 								}
@@ -562,7 +681,7 @@ class spellTemplateManager {
 									
 									source = getProperty(icon._texture, "baseTexture.resource.source");
 									if (source && (source.tagName === "VIDEO")) {
-										source.loop = true;
+										source.loop = (loopAnimations=="checked");
 										source.muted = true;
 										game.video.play(source);
 									}
@@ -601,7 +720,7 @@ class spellTemplateManager {
 					)
 					source = getProperty(icon._texture, "baseTexture.resource.source");
 					if (source && (source.tagName === "VIDEO")) {
-						source.loop = true;
+						source.loop = (loopAnimations=="checked");
 						source.muted = true;
 						game.video.play(source);
 					}
@@ -622,7 +741,7 @@ class spellTemplateManager {
 					icon = await placeable.addChild(sprite);
 					source = getProperty(icon._texture, "baseTexture.resource.source");
 					if (source && (source.tagName === "VIDEO")) {
-						source.loop = true;
+						source.loop = (loopAnimations=="checked");
 						source.muted = true;
 						game.video.play(source);
 					}
@@ -1362,7 +1481,9 @@ Hooks.on("renderItemSheet", (app, html) =>{
 	let currentTexture = app.object.getFlag("spellTemplateManager","texture")??"";
 	let useTexture = app.object.getFlag("spellTemplateManager","useTexture")??"";
 	let alpha = app.object.getFlag("spellTemplateManager","alpha")??"50";
-	let coneOrigin = app.object.getFlag("spellTemplateManager","cone-origin")??"";
+	let coneOrigin = app.object.getFlag("spellTemplateManager","coneOrigin")??"";
+	let loopAnimations = app.object.getFlag("spellTemplateManager","loopAnimations")??"checked";
+	
 	html.find(add).append(`		
 		<h3 class="form-header">Templates</h3>
 		<div class="form-group">
@@ -1399,7 +1520,15 @@ Hooks.on("renderItemSheet", (app, html) =>{
 		</div>
   	`);
 
-	coneOrigin = app.object.getFlag("spellTemplateManager","coneOrigin")??"";
+	 html.find(add).append(`		
+	  <div class="form-group">
+		  <label>
+		  Loop animations				
+		  </label>
+		  <input type="checkbox" style="float:right;" name="spell.template.loop.animations" ${loopAnimations}>
+	  </div>
+	`);
+  
 	if(app.object.data.data?.target?.type == "cone" || app.object.data.spellInfo?.area?.areaType == "cone"){
 		html.find(add).append(`		
 		<div class="form-group">
@@ -1459,6 +1588,11 @@ Hooks.on("renderItemSheet", (app, html) =>{
 	$('select[name="spell.template.cone.origin"]')[0].onchange = (event) => {
 		let coneOrigin = event.target.selectedIndex;
 		app.object.setFlag("spellTemplateManager","coneOrigin",coneOrigin);
+	}
+
+	$('input[name="spell.template.loop.animations"]')[0].onchange = (event) => {
+		let loopAnimations = event.target.checked ? "checked" : "";
+		app.object.setFlag("spellTemplateManager", "loopAnimations", loopAnimations);
 	}
 });
 
