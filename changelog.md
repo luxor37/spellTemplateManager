@@ -1,3 +1,7 @@
+v1.2.0 **6/22/2021
+* fixed bugs in applyTexture code
+* Added option to loop animations
+
 v.1.1.0 **6/22/2021
 * added field to template configuration to allow for non-managed templates to timeout 
 * Removed top/bottom lines from tooltip
