@@ -1,3 +1,9 @@
+v1.2.2
+* Increased compatibility with some browsers
+
+v1.2.1 **6/22/2021
+* Fixed bugs
+
 v1.2.0 **6/22/2021
 * fixed bugs in applyTexture code
 * Added option to loop animations
