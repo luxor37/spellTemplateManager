@@ -198,7 +198,7 @@ class spellTemplateManager {
 					let container = undefined;
 					switch(placeable.data.t){
 						case "circle":
-								if(STMtexture == undefined){
+							if(STMtexture == undefined){
 								STMtexture = await loadTexture(originalSpellTexture);
 								textureSize = placeable.height;
 								STMtexture.orig = { height: (textureSize * scale), width: textureSize * scale, x: -textureSize, y: -textureSize };
@@ -1437,7 +1437,7 @@ function registerSpellTemplateManagerSettings(){
                		name: game.i18n.localize("spellTemplateManager.usingAT.name"),
 			hint: game.i18n.localize("spellTemplateManager.usingAT.hint"),
 	               	type: Boolean,
-	               	default: true,
+	               	default: false,
 	               	config: (ATInstalled && ATEnabled),
 	               	scope: "world",
 	               	onChange: value => {
