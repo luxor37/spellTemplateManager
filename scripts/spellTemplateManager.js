@@ -475,7 +475,6 @@ class spellTemplateManager {
 		let alpha = placeable.getFlag("spellTemplateManager","alpha")??50;
 		let useTexture = placeable.getFlag("spellTemplateManager","useTexture")??"checked";
 		let loopAnimations = placeable.getFlag("spellTemplateManager","loopAnimations")??"checked";
-		console.log("Loop: ",loopAnimations,(loopAnimations=="checked"));
 		if(("" != (useTexture??"")) && "" != (originalSpellTexture??"")){
 
 			let STMtexture = undefined;	
