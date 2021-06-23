@@ -1584,9 +1584,11 @@ Hooks.on("renderItemSheet", (app, html) =>{
 		mfp.render();
 	}
 
-	$('select[name="spell.template.cone.origin"]')[0].onchange = (event) => {
-		let coneOrigin = event.target.selectedIndex;
-		app.object.setFlag("spellTemplateManager","coneOrigin",coneOrigin);
+	if(app.object.data.data?.target?.type == "cone" || app.object.data.spellInfo?.area?.areaType == "cone"){
+		$('select[name="spell.template.cone.origin"]')[0].onchange = (event) => {
+			let coneOrigin = event.target.selectedIndex;
+			app.object.setFlag("spellTemplateManager","coneOrigin",coneOrigin);
+		}
 	}
 
 	$('input[name="spell.template.loop.animations"]')[0].onchange = (event) => {
