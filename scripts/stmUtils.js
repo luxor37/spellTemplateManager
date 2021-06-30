@@ -1,6 +1,6 @@
-import { stmData } from './STMData.js';
+import { stmData } from './stmData.js';
 import * as UI from './UI.js';
-import * as stmUtils from './STMUtils.js';
+import * as stmUtils from './stmUtils.js';
 
 export function getSourceTemplate(id){
     let templateI = undefined
