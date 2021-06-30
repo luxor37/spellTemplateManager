@@ -1,5 +1,5 @@
 import * as stmUtils from './stmUtils.js';
-import { stmData } from './STMData.js';
+import { stmData } from './stmData.js';
 
 export async function applyTexture(args,mysi){
     if(args[0].data.flags.spellTemplateManager != undefined){
