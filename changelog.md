@@ -1,3 +1,11 @@
+v2.0.0
+* Template texture settings are now stored on the actor rather than the item
+* Added ability to apply textures to consubable objects such as wands and scrolls
+* Added additional About-Time compatibility. 
+* Squashed bugs
+* Major code overhaul to separate code into logical chunks
+* Added unique texturing to each template to allow for non-syncronous animation.  This also corrects an issue where if two templates were using the same texture and one had stopped animating, redrawing one such template would cause all to reanimate.
+
 v1.2.2
 * Increased compatibility with some browsers
 
