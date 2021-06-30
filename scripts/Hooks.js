@@ -17,7 +17,7 @@ export class stmHooks{
             async function newHover(wrapped, ...args) {
                 return true;
             }
-            libWrapper.register("spellTemplateManager2", "CONFIG.MeasuredTemplate.objectClass.prototype._canHover", newHover);
+            libWrapper.register("spellTemplateManager", "CONFIG.MeasuredTemplate.objectClass.prototype._canHover", newHover);
         });
         
         Hooks.once('ready', () => {
