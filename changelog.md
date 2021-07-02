@@ -1,3 +1,18 @@
+v2.0.5
+* Corrected issue with "Ignore Duration" flag being ignored.
+
+v2.0.4
+* Corrected casing that was preventing module load on non-Windows platforms. 
+
+v2.0.3
+* squashed bugs.
+
+v2.0.2
+* bad release resolved with v2.0.3.
+
+v2.0.1
+* Corrected bug in libwrapper implementation that was  preventing loading on all systems.
+
 v2.0.0
 * Template texture settings are now stored on the actor rather than the item
 * Added ability to apply textures to consubable objects such as wands and scrolls
