@@ -525,7 +525,7 @@ export function parseChatMessage2(args){
                         duration  = -1;
                         break;
                     default:
-                        duration = -1;
+                        duration = 0;
                 }
             }
             if(spellTemplateManager.currentData.item.data.flags.spellTemplateManager?.stmData === undefined){
