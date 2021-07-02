@@ -1,3 +1,6 @@
+v2.1.0
+* Added ability to reuse item templates.
+
 v2.0.5
 * Corrected issue with "Ignore Duration" flag being ignored.
 
