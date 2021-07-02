@@ -189,7 +189,7 @@ export function createATEvents(){
 }
 
 export async function ageTemplates(Combat){
-    console.log("Spell Template Manger | Aging templates for ", Combat.combatant.actor.name);
+    console.log("Spell Template Manager | Aging templates for ", Combat.combatant.actor.name);
     let controlling = Combat.scene.data.templates.filter(i => i.data.flags.spellTemplateManager !== undefined);
     console.debug("Controlling: ",controlling);
     console.debug("Combat Actor: ",Combat.combatant.actor.id);
@@ -528,12 +528,12 @@ export function parseChatMessage2(args){
                         duration = -1;
                 }
             }
-            if(spellTemplateManager.currentData.item.data.flags.spellTemplateManager === undefined){
-                spellTemplateManager.currentData.ignoreDuration = "";
+            if(spellTemplateManager.currentData.item.data.flags.spellTemplateManager?.stmData === undefined){
+                spellTemplateManager.currentData.ignoreDuration = false;
             }else{
-                spellTemplateManager.currentData.ignoreDuration = (spellTemplateManager.currentData.item.data.flags.spellTemplateManager.ignoreDuration??"");					
+                spellTemplateManager.currentData.ignoreDuration = (spellTemplateManager.currentData.item.data.flags.spellTemplateManager.stmData.ignoreDuration??false);					
             }
-            spellTemplateManager.currentData.duration = (spellTemplateManager.currentException?0:duration);
+            spellTemplateManager.currentData.duration = (spellTemplateManager.currentData.ignoreDuration?0:duration);
         }else{
             console.debug("Spell Template Manager | Ignoring chat message");
         }
