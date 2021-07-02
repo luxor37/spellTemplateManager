@@ -153,8 +153,8 @@ export function registerSpellTemplateManagerSettings(system,stmSettings){
 
 	game.settings.register(
 		"spellTemplateManager","reuseItems", {
-            name: "Reuse Items",
-            hint: "Select to allow placement of multiple templates using the same item or spell",
+            name: game.i18n.localize("spellTemplateManager.reuseItems.name"),
+            hint: game.i18n.localize("spellTemplateManager.reuseItems.hint"),
             type: Boolean,
             default: false,
             config: true,

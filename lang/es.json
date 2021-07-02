@@ -20,5 +20,7 @@
     "spellTemplateManager.usingAT.name": "Utilice Acerca del tiempo para el procesamiento del tiempo de espera de la plantilla",
     "spellTemplateManager.usingAT.hint": "Al marcar esta casilla se descargarán el procesamiento y descarga de STM en el módulo Acerca del Tiempo",
     "spellTemplateManager.enforceConcentration.name": "Hacer cumplir la concentración",
-    "spellTemplateManager.enforceConcentration.hint": "Si está habilitada, eliminará las plantillas de concentración antiguas si se coloca una nueva plantilla de concentración"
+    "spellTemplateManager.enforceConcentration.hint": "Si está habilitada, eliminará las plantillas de concentración antiguas si se coloca una nueva plantilla de concentración",
+    "spellTemplateManager.reuseItems.name": "Reutilizar artículos",
+    "spellTemplateManager.reuseItems.hint": "Seleccione para permitir la colocación de varias plantillas usando el mismo elemento o hechizo"
 }

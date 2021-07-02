@@ -20,5 +20,7 @@
     "spellTemplateManager.usingAT.name": "Use About Time for template timeout processing",
     "spellTemplateManager.usingAT.hint": "Checking this box will disalbe STM processing and offload to the About Time module",
     "spellTemplateManager.enforceConcentration.name": "Enforce Concentration",
-    "spellTemplateManager.enforceConcentration.hint": "If enabled, will remove old concentration templates if a new concentration template is placed"
+    "spellTemplateManager.enforceConcentration.hint": "If enabled, will remove old concentration templates if a new concentration template is placed",
+    "spellTemplateManager.reuseItems.name": "Reuse Items",
+    "spellTemplateManager.reuseItems.hint": "Select to allow placement of multiple templates using the same item or spell"
 }
