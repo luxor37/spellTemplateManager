@@ -46,7 +46,7 @@ export function getDuration(stmData, instantaneousSpellFade,roundSeconds){
                 stmData.duration = -1;
                 break;
             default:
-                stmData.duration = -1;
+                stmData.duration = 0;
         }
     }else{
         stmData.duration=instantaneousSpellFade * roundSeconds;
@@ -248,7 +248,7 @@ export async function manageUnmanaged(Combat,settings,GM=false){
                         spellIsSpecial = true;
                         break;
                     default:
-                        duration = -1;
+                        duration = 0;
                         break;
                 }
                 let update = {_id: managing[i].id, flags: {
@@ -534,7 +534,6 @@ export function parseChatMessage2(args){
                             duration = 0;
                     }
                 }
-<<<<<<< HEAD
                 if(stmData.item.data.flags.spellTemplateManager?.stmData === undefined){
                     stmData.ignoreDuration = false;
                 }else{
@@ -543,59 +542,6 @@ export function parseChatMessage2(args){
                 stmData.duration = (stmData.ignoreDuration?0:duration);
                 if(true){
                     spellTemplateManager.currentData = stmData;
-=======
-                if(value == "next") value = 1;	
-                if(value == "current") value = 0;
-                if(String(value).indexOf("d")>-1) value = value.substring(value.indexOf("d")+1,value.length);					
-                switch(units) {
-                    case "year":
-                    case "years":
-                        duration = value * 10 * 60 * 24 * 365 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "week":
-                    case "weeks":
-                        duration = value * 10 * 60 * 24 * 7 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "day":
-                    case "days":
-                        duration = value * 10 * 60 * 24 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "hour":
-                    case "hours":
-                        duration  = value * 10 * 60 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "inst":
-                    case "":
-                        duration  = spellTemplateManager.currentSettings.instantaneousSpellFade * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "minute":
-                    case "minutes":
-                    case "minue":
-                        duration  = value * 10 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "round":
-                    case "rounds":
-                    case "turn":
-                    case "turns":
-                        duration  = value * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "spec":
-                    case "unti":
-                    case "until":
-                    case "varies":
-                    case "sustained":
-                    case "unlimited":
-                    case "preparations":
-                    case "text":
-                    case "below)":
-                    case "longer)":
-                    case "stance":
-                    case "dismissed":
-                        duration  = -1;
-                        break;
-                    default:
-                        duration = 0;
->>>>>>> a150a494b02861afea1cef88f564b908cf2ee1c2
                 }
             }else{
                 console.debug("Spell Template Manager | Ignoring chat message");
