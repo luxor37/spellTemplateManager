@@ -79,7 +79,7 @@ export function patchItemSheet(args){
     html.find(add).append(`		
         <div class="form-group">
             <label>
-            Alpha (transparency)%				
+            Alpha (Opacity)%				
             </label>
             <input type="number" style="float:right;" name="spell.template.alpha" min="10" max="100" value="${alpha}" >
         </div>
