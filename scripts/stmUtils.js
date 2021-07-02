@@ -65,7 +65,7 @@ export function getData(dialog,html){
         scene : game.scenes.viewed.id,
         player : game.userId,
         spell : dialog.item.name,
-        ignoreDuration : dialog.item.data.flags.spellTemplateManager?.ignoreDuration??false,
+        ignoreDuration : dialog.item.data.flags.spellTemplateManager?.stmData?.ignoreDuration??false,
         duration: undefined
     };
     if(stmData.item !== undefined){ console.debug("Spell Template Manager | determining spell duration");return getDuration(stmData,instantaneousSpellFade,roundSeconds); } else { return undefined;}
