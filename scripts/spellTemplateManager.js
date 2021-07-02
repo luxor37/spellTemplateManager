@@ -18,7 +18,8 @@ class spellTemplateManager {
 		worldConcentration: true,
 		instantaneousSpellFade : 0,
 		unmanagedTemplateAction : "prompt",
-		system: undefined
+		system: undefined,
+		reuseItems: false
 	};
 	static currentData = {
 		item:undefined,

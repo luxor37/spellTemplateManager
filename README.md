@@ -34,4 +34,4 @@ Spell Template Manager fully supports real-time template expiration through use 
 
 ## Requirements
 
-Spell Template Manager requires the **Color Settings** modlue to support core settings selections, and  the **lib-Wrapper** module to support hover capabilities for players.  
+Spell Template Manager requires the **Color Settings** module to support core settings selections, and  the **lib-Wrapper** module to support hover capabilities for players.  

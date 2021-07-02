@@ -371,7 +371,9 @@ export function updateTemplate(scene,template,ignoreDuration,isConcentration,isS
                 let notifyTime = ignoreDuration?(spellTemplateManager.currentSettings.instantaneousSpellFade*roundSeconds):(spellTemplateManager.currentData.duration??duration);
                 game.Gametime.notifyIn({seconds: notifyTime},"spellTemplateManager",template.id);
             }
-            spellTemplateManager.resetItemData();  
+            if(!spellTemplateManager.currentSettings.reuseItems){
+                spellTemplateManager.resetItemData();  
+            }
             done = true;
         }else{
             console.debug("Spell Template Manager | Failed to update template.  Retrying. ", index);
@@ -426,7 +428,8 @@ export async function evaluateTemplate(template,data,userID){
 export function parseChatMessage2(args){
     console.debug("Spell Template Manager | Parsing chat message");
     if(spellTemplateManager.currentStatus.running){
-        spellTemplateManager.currentData.player = game.userId;
+        let stmData = {};
+        stmData.player = game.userId;
         let mmessage = args[0];
         let mcard = args[1];
         let mcontent = mcard.content;
@@ -441,101 +444,110 @@ export function parseChatMessage2(args){
         let valid = true;
         let mtoken = undefined;
         let itemID = undefined;
+        
 
-            let actorID = mcard.speaker?.actor ?? mcontent.substring(actorIndex+15,actorIndex+15+16);
-            spellTemplateManager.currentData.actor = game.actors.get(actorID);
-            spellTemplateManager.currentData.scene = ((sceneIndex > -1)?mcontent.substring(sceneIndex+15,sceneIndex+15+16):game.scenes.viewed._id);
-            mtoken = ((sceneIndex > -1)?game.scenes.get(spellTemplateManager.currentData.scene).data.tokens.get(mcontent.substring(sceneIndex+15+16+1,sceneIndex+15+16+1+16)):game.scenes.get(spellTemplateManager.currentData.scene).data.tokens.get(mcard.speaker.token));
+        let actorID = mcard.speaker?.actor ?? mcontent.substring(actorIndex+15,actorIndex+15+16);
+        stmData.actor = game.actors.get(actorID);
+        stmData.scene = ((sceneIndex > -1)?mcontent.substring(sceneIndex+15,sceneIndex+15+16):game.scenes.viewed._id);
+        mtoken = ((sceneIndex > -1)?game.scenes.get(stmData.scene).data.tokens.get(mcontent.substring(sceneIndex+15+16+1,sceneIndex+15+16+1+16)):game.scenes.get(stmData.scene).data.tokens.get(mcard.speaker.token));
 
-            switch(mtoken.isLinked || (!mtoken.isLinked && sceneIndex == -1 )){
-                case true:
-                    itemID = mcontent.substring(itemIndex+14,itemIndex+14+16);
-                    spellTemplateManager.currentData.item = spellTemplateManager.currentData.actor.data.items.get(itemID);
-                    break;
-                case false:
-                    itemID = mcontent.substring(itemIndex+14,itemIndex+14+16);
-                    spellTemplateManager.currentData.item = {
-                        id:itemID,
-                        data:mtoken.data.actorData.items.find(element => element._id == itemID),
-                        type:mtoken.data.actorData.items.find(element => element._id == itemID).type
-                    };
-                    break;
-            }
-        spellTemplateManager.currentData.spell = spellTemplateManager.currentData.item.name;
-        if(["spell","feat"].includes(spellTemplateManager.currentData.item.type)){
-            console.log("Spell Template Manager | Checking for duration");
-            if(spellTemplateManager.currentData.item.data.data.duration?.value=="" || spellTemplateManager.currentData.item.data.data.duration?.value==undefined){
-                duration  = spellTemplateManager.currentData.instantaneousSpellFade;
-            }else{
-                let durationArray = spellTemplateManager.currentData.item.data.data.duration.value.toLowerCase().split(" ");
-                if(durationArray.length > 1){
-                    value = durationArray[durationArray.length-2];
-                    units = durationArray[durationArray.length-1];
+        switch(mtoken.isLinked || (!mtoken.isLinked && sceneIndex == -1 )){
+            case true:
+                itemID = mcontent.substring(itemIndex+14,itemIndex+14+16);
+                stmData.item = stmData.actor.data.items.get(itemID);
+                break;
+            case false:
+                itemID = mcontent.substring(itemIndex+14,itemIndex+14+16);
+                stmData.item = {
+                    id:itemID,
+                    data:mtoken.data.actorData.items.find(element => element._id == itemID),
+                    type:mtoken.data.actorData.items.find(element => element._id == itemID).type
+                };
+                break;
+        }
+        if(stmData.item){
+            stmData.spell = stmData.item.name;
+            console.debug(stmData.item);
+            if(["spell","feat","consumable"].includes(stmData.item.type)){
+                console.log("Spell Template Manager | Checking for duration");
+                if(stmData.item.data.data.duration?.value=="" || stmData.item.data.data.duration?.value==undefined){
+                    duration  = stmData.instantaneousSpellFade;
                 }else{
-                    value = 1;
-                    units = durationArray[0];
+                    let durationArray = stmData.item.data.data.duration.value.toLowerCase().split(" ");
+                    if(durationArray.length > 1){
+                        value = durationArray[durationArray.length-2];
+                        units = durationArray[durationArray.length-1];
+                    }else{
+                        value = 1;
+                        units = durationArray[0];
+                    }
+                    if(value == "next") value = 1;	
+                    if(value == "current") value = 0;
+                    if(String(value).indexOf("d")>-1) value = value.substring(value.indexOf("d")+1,value.length);					
+                    switch(units) {
+                        case "year":
+                        case "years":
+                            duration = value * 10 * 60 * 24 * 365 * spellTemplateManager.currentSettings.roundSeconds;
+                            break;
+                        case "week":
+                        case "weeks":
+                            duration = value * 10 * 60 * 24 * 7 * spellTemplateManager.currentSettings.roundSeconds;
+                            break;
+                        case "day":
+                        case "days":
+                            duration = value * 10 * 60 * 24 * spellTemplateManager.currentSettings.roundSeconds;
+                            break;
+                        case "hour":
+                        case "hours":
+                            duration  = value * 10 * 60 * spellTemplateManager.currentSettings.roundSeconds;
+                            break;
+                        case "inst":
+                        case "":
+                            duration  = spellTemplateManager.currentSettings.instantaneousSpellFade * spellTemplateManager.currentSettings.roundSeconds;
+                            break;
+                        case "minute":
+                        case "minutes":
+                        case "minue":
+                            duration  = value * 10 * spellTemplateManager.currentSettings.roundSeconds;
+                            break;
+                        case "round":
+                        case "rounds":
+                        case "turn":
+                        case "turns":
+                            duration  = value * spellTemplateManager.currentSettings.roundSeconds;
+                            break;
+                        case "spec":
+                        case "unti":
+                        case "until":
+                        case "varies":
+                        case "sustained":
+                        case "unlimited":
+                        case "preparations":
+                        case "text":
+                        case "below)":
+                        case "longer)":
+                        case "stance":
+                        case "dismissed":
+                            duration  = -1;
+                            break;
+                        default:
+                            duration = 0;
+                    }
                 }
-                if(value == "next") value = 1;	
-                if(value == "current") value = 0;
-                if(String(value).indexOf("d")>-1) value = value.substring(value.indexOf("d")+1,value.length);					
-                switch(units) {
-                    case "year":
-                    case "years":
-                        duration = value * 10 * 60 * 24 * 365 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "week":
-                    case "weeks":
-                        duration = value * 10 * 60 * 24 * 7 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "day":
-                    case "days":
-                        duration = value * 10 * 60 * 24 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "hour":
-                    case "hours":
-                        duration  = value * 10 * 60 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "inst":
-                    case "":
-                        duration  = spellTemplateManager.currentSettings.instantaneousSpellFade * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "minute":
-                    case "minutes":
-                    case "minue":
-                        duration  = value * 10 * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "round":
-                    case "rounds":
-                    case "turn":
-                    case "turns":
-                        duration  = value * spellTemplateManager.currentSettings.roundSeconds;
-                        break;
-                    case "spec":
-                    case "unti":
-                    case "until":
-                    case "varies":
-                    case "sustained":
-                    case "unlimited":
-                    case "preparations":
-                    case "text":
-                    case "below)":
-                    case "longer)":
-                    case "stance":
-                    case "dismissed":
-                        duration  = -1;
-                        break;
-                    default:
-                        duration = -1;
+                if(stmData.item.data.flags.spellTemplateManager?.stmData === undefined){
+                    stmData.ignoreDuration = false;
+                }else{
+                    stmData.ignoreDuration = (stmData.item.data.flags.spellTemplateManager.stmData.ignoreDuration??false);					
                 }
-            }
-            if(spellTemplateManager.currentData.item.data.flags.spellTemplateManager?.stmData === undefined){
-                spellTemplateManager.currentData.ignoreDuration = false;
+                stmData.duration = (stmData.ignoreDuration?0:duration);
+                if(true){
+                    spellTemplateManager.currentData = stmData;
+                }
             }else{
-                spellTemplateManager.currentData.ignoreDuration = (spellTemplateManager.currentData.item.data.flags.spellTemplateManager.stmData.ignoreDuration??false);					
+                console.debug("Spell Template Manager | Ignoring chat message");
             }
-            spellTemplateManager.currentData.duration = (spellTemplateManager.currentData.ignoreDuration?0:duration);
         }else{
-            console.debug("Spell Template Manager | Ignoring chat message");
+            console.debug("Spell Template Manager | Not a useable item");
         }
     }else{
         console.debug("Spell Template Manager | Not ready");

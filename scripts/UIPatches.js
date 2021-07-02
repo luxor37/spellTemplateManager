@@ -17,7 +17,7 @@ export function patchItemSheet(args){
             add = ".tab.item-details";
             break;
     }
-    if(!["spell","feat"].includes(app.object.type) && (!template_types.includes(app.object.data.data?.target?.type) || !template_types.includes(app.object.data.spellInfo?.area?.areaType))) return;
+    if(!["spell","feat","consumable"].includes(app.object.type) && (!template_types.includes(app.object.data.data?.target?.type) || !template_types.includes(app.object.data.spellInfo?.area?.areaType))) return;
     let itemData = new stmData(app.object.getFlag("spellTemplateManager","stmData"));
     console.log("First Data: ",itemData);
     if(itemData == undefined || Object.keys(itemData).length === 0){
@@ -79,7 +79,7 @@ export function patchItemSheet(args){
     html.find(add).append(`		
         <div class="form-group">
             <label>
-            Alpha (transparency)%				
+            Alpha (Opacity)%				
             </label>
             <input type="number" style="float:right;" name="spell.template.alpha" min="10" max="100" value="${alpha}" >
         </div>

@@ -151,5 +151,20 @@ export function registerSpellTemplateManagerSettings(system,stmSettings){
         stmSettings.roundSeconds = 6;
     }
 
+	game.settings.register(
+		"spellTemplateManager","reuseItems", {
+            name: "Reuse Items",
+            hint: "Select to allow placement of multiple templates using the same item or spell",
+            type: Boolean,
+            default: false,
+            config: true,
+            scope: "world",
+            onChange: (value) => {
+                stmSettings.reuseItems = value;
+            }
+        }
+	);
+	stmSettings.reuseItems = game.settings.get("spellTemplateManager","reuseItems");
+
     return stmSettings;	
 }
