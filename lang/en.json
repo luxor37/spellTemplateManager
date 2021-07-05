@@ -18,7 +18,7 @@
     "spellTemplateManager.worldConcentration.name": "Maintain concentration across scenes",
     "spellTemplateManager.worldConcentration.hint": "Check to end concentration templates on all scenes whenever a concentration spell is cast",
     "spellTemplateManager.usingAT.name": "Use About Time for template timeout processing",
-    "spellTemplateManager.usingAT.hint": "Checking this box will disalbe STM processing and offload to the About Time module",
+    "spellTemplateManager.usingAT.hint": "Checking this box will disable STM processing and offload to the About Time module",
     "spellTemplateManager.enforceConcentration.name": "Enforce Concentration",
     "spellTemplateManager.enforceConcentration.hint": "If enabled, will remove old concentration templates if a new concentration template is placed",
     "spellTemplateManager.reuseItems.name": "Reuse Items",

@@ -146,7 +146,7 @@ export function registerSpellTemplateManagerSettings(system,stmSettings){
     stmSettings.usingAT = (ATInstalled && ATEnabled && game.settings.get("spellTemplateManager","usingAT"));
     stmSettings.system = game.system.data.name;
     if(stmSettings.usingAT){
-        stmSettings.roundSeconds = game.settings.get("about-time", "seconds-per-round");
+        stmSettings.roundSeconds = CONFIG.time.roundTime;
     }else{
         stmSettings.roundSeconds = 6;
     }

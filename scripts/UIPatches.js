@@ -30,14 +30,16 @@ export function patchItemSheet(args){
             coneOrigin:app.object.getFlag("spellTemplateManager","coneOrigin")??1,
             loopAnimations:app.object.getFlag("spellTemplateManager","loopAnimations")??true
         }
-        itemData = new stmData(tempData);
-        app.object.setFlag("spellTemplateManager","stmData",itemData);        
-        app.object.unsetFlag("spellTemplateManager","ignore-duration");
-        app.object.unsetFlag("spellTemplateManager","texture");
-        app.object.unsetFlag("spellTemplateManager","üseTexture");
-        app.object.unsetFlag("spellTemplateManager","alpha");
-        app.object.unsetFlag("spellTemplateManager","coneOrigin");
-        app.object.unsetFlag("spellTemplateManager","loopAnimations");
+        if(app.isEditable){
+            itemData = new stmData(tempData);
+            app.object.setFlag("spellTemplateManager","stmData",itemData);        
+            app.object.unsetFlag("spellTemplateManager","ignore-duration");
+            app.object.unsetFlag("spellTemplateManager","texture");
+            app.object.unsetFlag("spellTemplateManager","üseTexture");
+            app.object.unsetFlag("spellTemplateManager","alpha");
+            app.object.unsetFlag("spellTemplateManager","coneOrigin");
+            app.object.unsetFlag("spellTemplateManager","loopAnimations");
+        }
     }
     console.debug("Item Data: ", itemData);
     let ignoreDuration = itemData.getIgnoreDuration()??false;
@@ -55,7 +57,7 @@ export function patchItemSheet(args){
             <label>
                 Ignore Spell Duration (Remove Immediately)				
             </label>
-            <input type="checkbox" style="float:right;" name="spell.template.removal" ${ignoreDuration?"checked":""}>
+            <input type="checkbox" style="float:right;" name="spell.template.removal" ${ignoreDuration?"checked":""} ${app.isEditable?"":"disabled"}>
         </div>
     `);
     
@@ -64,14 +66,14 @@ export function patchItemSheet(args){
             <label>
             Use Spell Texture				
             </label>
-            <input type="checkbox" style="float:right;" name="spell.template.useTexture" ${useTexture?"checked":""}>
+            <input type="checkbox" style="float:right;" name="spell.template.useTexture" ${useTexture?"checked":""} ${app.isEditable?"":"disabled"}>
         </div>
     `);
     
     html.find(add).append(`
         <div class="form-group">
-            <label class="textureSelect" style="float:left;">Texture <input type="text" size="10" style="width: 65%;" name="spell.template.texture.text" value=${spellTexture}  >
-                <input type="button" name="spell.template.texture.bttn" value="Select" style="width: 20%; text-align: center;">
+            <label class="textureSelect" style="float:left;">Texture <input type="text" size="10" style="width: 65%;" name="spell.template.texture.text" ${app.isEditable?"":"disabled='disabled'"} value=${spellTexture}   >
+                <input type="button" name="spell.template.texture.bttn" value="Select" style="width: 20%; text-align: center;" ${app.isEditable?"":"disabled"}>
             </label>
         </div>
     `);
@@ -81,7 +83,7 @@ export function patchItemSheet(args){
             <label>
             Alpha (Opacity)%				
             </label>
-            <input type="number" style="float:right;" name="spell.template.alpha" min="10" max="100" value="${alpha}" >
+            <input type="number" style="float:right;" name="spell.template.alpha" min="10" max="100" value="${alpha}" ${app.isEditable?"":"disabled"} >
         </div>
     `);
 
@@ -90,7 +92,7 @@ export function patchItemSheet(args){
         <label>
         Loop animations				
         </label>
-        <input type="checkbox" style="float:right;" name="spell.template.loop.animations" ${loopAnimations?"checked":""}>
+        <input type="checkbox" style="float:right;" name="spell.template.loop.animations" ${loopAnimations?"checked":""} ${app.isEditable?"":"disabled"}>
     </div>
     `);
 
@@ -99,7 +101,7 @@ export function patchItemSheet(args){
         <div class="form-group">
             <label>
             Cone texture Origin				
-            </label><select name="spell.template.cone.origin">
+            </label><select name="spell.template.cone.origin" ${app.isEditable?"":"disabled"}>
                 <option value="Center" ${coneOrigin==0?"selected":""}>Center</option>
                 <option value="Left" ${coneOrigin==1?"selected":""}>Left</option>
                 <option value="Right" ${coneOrigin==2?"selected":""}>Right</option>
