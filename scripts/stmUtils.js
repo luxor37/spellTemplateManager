@@ -24,11 +24,12 @@ export function getDuration(stmData, instantaneousSpellFade,roundSeconds){
     let units = stmData.item.data.data.duration.units;
     if(!stmData.ignoreDuration){
         console.debug("Do not ignore duration");
-        switch(units) {
+        switch(units.toLowerCase()) {
             case "day":
                 stmData.duration = value * 10 * 60 * 24 * roundSeconds;
                 break;
             case "hour":
+            case "hours":
                 stmData.duration = value * 10 * 60 * roundSeconds;
                 break;
             case "inst":
@@ -345,7 +346,7 @@ export function updateTemplate(scene,template,ignoreDuration,isConcentration,isS
                     duration: spellTemplateManager.currentData.duration??duration,
                     special: (isSpecialSpell),
                     scene: scene.id,
-                    birthday: spellTemplateManager.currentSettings.usingAT?game.Gametime.ElapsedTime.currentTimeSeconds():undefined,
+                    birthday: spellTemplateManager.currentSettings.usingAT?game.Gametime.DTNow()._timestamp:undefined,
                     spell: spellTemplateManager.currentData.spell,
                     item: spellTemplateManager.currentData.item?.id,
                     stmData: gottenData
@@ -367,7 +368,7 @@ export function updateTemplate(scene,template,ignoreDuration,isConcentration,isS
             scene.updateEmbeddedDocuments("MeasuredTemplate", [update]);
             console.debug("Template Updated");
             if(game.settings.get('spellTemplateManager','usingAT')){
-                let roundSeconds = game.settings.get("about-time", "seconds-per-round");	
+                let roundSeconds = CONFIG.time.roundTime;	
                 let notifyTime = ignoreDuration?(spellTemplateManager.currentSettings.instantaneousSpellFade*roundSeconds):(spellTemplateManager.currentData.duration??duration);
                 game.Gametime.notifyIn({seconds: notifyTime},"spellTemplateManager",template.id);
             }

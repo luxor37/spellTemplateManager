@@ -18,6 +18,7 @@ export class stmHooks{
                 return true;
             }
             libWrapper.register("spellTemplateManager", "CONFIG.MeasuredTemplate.objectClass.prototype._canHover", newHover);
+
         });
         
         Hooks.once('ready', () => {
@@ -83,7 +84,7 @@ export class stmHooks{
         });
         
         Hooks.on("about-time.eventTrigger", (...args) => {
-            if(args[0] == "spellTemplateManager" && spellTemplateManager.usingAT){
+            if(args[0] == "spellTemplateManager" && spellTemplateManager.currentSettings.usingAT){
                 stmUtils.deleteTemplate(args[1]);
             }
         });
@@ -106,12 +107,12 @@ export class stmHooks{
             let ttspell = sourceTemplate.data.flags.spellTemplateManager?.spell??"???"
             let ttduration = "";
             
-            if(spellTemplateManager.usingAT){
-                let ttbd = (sourceTemplate.data.flags.spellTemplateManager?.bd)??0;
-                let tttr = "Unknown";
+            if(spellTemplateManager.currentSettings.usingAT){
+                let ttbd = (sourceTemplate.data.flags.spellTemplateManager?.birthday)??0;
+                let tttr = "Unknown";//time remaining
                 let ttod = (sourceTemplate.data.flags.spellTemplateManager?.duration)??0;
                 if(ttbd > 0){
-                    tttr = ((ttod * 6) + ttbd - game.Gametime.ElapsedTime.currentTimeSeconds());
+                    tttr = (ttod + ttbd - game.Gametime.DTNow()._timestamp);
                 }
                 ttduration = "Remaining: "+(tttr)+" seconds";
                 
