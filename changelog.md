@@ -1,3 +1,10 @@
+v2.1.3 **7/9/2021
+* Corrected manifest
+
+v2.1.2 **7/8/2021
+* Corrected compatibility with About Time module
+* Corrected bug causing an error if a locked compendium item was opened.
+
 v2.1.0
 * Added ability to reuse item templates.
 
