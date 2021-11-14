@@ -32,12 +32,7 @@ export async function promptForAction(name){
                           delete: {
                     label: "Delete",
                     callback: async function() {
-                        let confirmation = await promptDelete();
-                        if(confirmation === "yes"){
-                            complete({action:"delete",units:"none",value:0});
-                        }else{
-                            complete({action:"skip",units:"none",value:0});
-                        }
+                        complete({action:"delete",units:"none",value:0});
                     }
                 },
                 claim: {
